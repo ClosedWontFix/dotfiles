@@ -6,6 +6,9 @@
 [push]
 	autoSetupRemote = true
 [include]
-    path = ~/.gitconfig-personal   
+    # Define default commit email address
+    path = ~/.gitconfig-default
+
 [includeIf "gitdir:~/work/"]
+    # Define secondary commit email address when in a git dir in ~/work/
     path = ~/.gitconfig-work
