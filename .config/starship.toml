@@ -1,0 +1,260 @@
+#
+# File: ~/.config/starship.toml
+# Author: ClosedWontFix
+#
+
+# Get editor completions based on the config schema
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# Inserts a blank line between shell prompts
+add_newline = true
+
+format = """
+$os\
+[ ](fg:black inverted bg:bright-blue)\
+$username\
+$hostname\
+[ ](fg:black bg:blue)\
+$directory\
+[ ](fg:blue)\
+${custom.docker}\
+$helm\
+$python\
+$terraform\
+$git_branch\
+$git_commit\
+$git_state\
+$git_metrics\
+$git_status\
+$fill\
+$cmd_duration\
+$status\
+$kubernetes\
+$battery\
+$time\
+$line_break\
+${custom.git_config_email}\
+${custom.dotfiles_head}${custom.dotfiles_changes}${custom.dotfiles_commits_ahead}${custom.dotfiles_commits_behind}${custom.dotfiles_tail}\
+$character"""
+
+[battery]
+format = '[$symbol$percentage]($style) '
+disabled = false
+[[battery.display]]
+threshold = 10
+style = 'fg:red bold'
+[[battery.display]]
+threshold = 30
+style = 'fg:#F78000 bold'
+
+[character]
+error_symbol = "[✗](bold bright-red)"
+success_symbol = "[▶](bold green)"
+
+[cmd_duration]
+format = "[$duration ]($style)"
+
+[directory]
+format = '[$path ]($style)'
+truncation_length = 3
+truncation_symbol = '…/'
+style = "fg:bold yellow bg:blue"
+
+[directory.substitutions]
+"Desktop" = " "
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Finances" = " "
+"GoogleDrive" = " "
+"Movies" = " "
+"Music" = " "
+"Pictures" = " "
+"Public" = " "
+"public_html" = " "
+"Videos" = " "
+
+[fill]
+symbol = ' '
+
+[git_branch]
+format = "[$symbol$branch(:$remote_branch)]($style) "
+symbol = " "
+disabled = false
+
+[git_commit]
+format = '[\($hash$tag\)]($style) '
+disabled = false
+
+[git_metrics]
+format = '([+$added]($added_style) )([-$deleted]($deleted_style) )'
+disabled = false
+
+[git_status]
+format = '([\[$all_status$ahead_behind\]]($style) )'
+ahead = '⇡${count}'
+behind = '⇣${count}'
+diverged = '⇕⇡${ahead_count}⇣${behind_count}'
+modified = "±"
+disabled = false
+
+[git_state]
+format = '\([$state( $progress_current/$progress_total)]($style)\) '
+disabled = false
+
+[helm]
+format = "[$symbol]($style) "
+symbol = " "
+
+[hostname]
+ssh_only = false
+# Hide the hostname in remote tmux sessions​
+# detect_env_vars = ['!TMUX', 'SSH_CONNECTION']
+format = '[@$hostname $ssh_symbol]($style)'
+ssh_symbol = '🌐 '
+style = "fg:green bold bg:black"
+
+[kubernetes]
+format = "[ $symbol$context/$user( \\($namespace\\)) ]($style)"
+symbol = "󱃾 "
+disabled = false
+
+#
+# Kubernetes contexts for OpenShift Local 
+#
+# Warn when kubernetes user is kube:admin
+[[kubernetes.contexts]]
+context_pattern = "((.*.|)/api-|)crc-(?P<cluster>[\\w-]+)(-|:6443|).*"
+context_alias = "crc-$cluster"
+user_pattern = "kube(:|)admin(/|).*"
+user_alias = "kubeadmin"
+style = "fg:bright-red"
+[[kubernetes.contexts]]
+context_pattern = "((.*.|)/api-|)crc-(?P<cluster>[\\w-]+)(-|:6443|).*"
+context_alias = "crc-$cluster"
+user_pattern = "(?P<user>[\\w-]+)(/|).*"
+user_alias = "$user"
+
+#
+# Kubernetes contexts for OpenShift Container Platform
+#
+# Warn when kubernetes user is kube:admin
+[[kubernetes.contexts]]
+context_pattern = ".*/api-(?P<cluster>[\\w-]+)-(ocp(4|)|openshift|osh)-.*"
+context_alias = "$cluster"
+user_pattern = "kube(:|)admin/.*"
+user_alias = "**KUBEADMIN**"
+style = "fg:bold bright-red inverted"
+# Warn when kubernetes user is a "sa" account
+[[kubernetes.contexts]]
+context_pattern = ".*/api-(?P<cluster>[\\w-]+)-(ocp(4|)|openshift|osh)-.*"
+context_alias = "$cluster"
+user_pattern = "(sa)-(?P<user>[\\w-]+(@.*.|))/.*"
+user_alias = "sa-$user"
+style = "fg:bold bright-red"
+[[kubernetes.contexts]]
+context_pattern = ".*/api-(?P<cluster>[\\w-]+)-(ocp(4|)|openshift|osh)-.*"
+context_alias = "$cluster"
+user_pattern = "(?P<user>[\\w-]+(@.*.|))/.*"
+user_alias = "$user"
+
+[os]
+disabled = false
+format = "[ $symbol ]($style)"
+style = "fg:black bg:bright-blue"
+
+[os.symbols]
+AlmaLinux = ""
+Alpine = ""
+Amazon = ""
+Android = ""
+Arch = ""
+CentOS = ""
+Debian = ""
+Fedora = ""
+FreeBSD = ""
+Kali = ""
+Linux = ""
+Macos = ""
+openSUSE = ""
+OracleLinux = ""
+Raspbian = ""
+Redhat = ""
+RedHatEnterprise = ""
+RockyLinux = ""
+SUSE = ""
+Ubuntu = "󰕈"
+Unknown = ""
+Windows = ""
+
+[python]
+format = '[$symbol]($style) '
+symbol = ' '
+
+[sudo]
+disabled = false
+format = "[$user]($style)"
+style = "fg:red bold"
+
+[status]
+disabled = false
+
+[terraform]
+format = '[$symbol $workspace]($style) '
+symbol = ' '
+
+[time]
+disabled = false
+format = ' [\[ $time \]]($style) '
+
+[username]
+format = "[$user]($style)"
+show_always = true
+style_user = "fg:green bold bg:black"
+style_root = "fg:red bold inverted"
+
+
+[custom.docker]
+format = '[$symbol]($style) '
+style = 'fg:bold blue'
+symbol = ' '
+when = '[[ -f docker-compose.yml ]] || [[ -f docker-compose.yaml ]] || [[ -f Dockerfile ]]'
+
+#
+# Show user.email when in git repo
+#
+[custom.git_config_email]
+description = "Output the current git user's configured email address."
+command = "git config user.email || echo 'undefined user.email'"
+format = "[   $output [](fg:bright-white)\n]($style)"
+when = "git rev-parse --is-inside-work-tree >/dev/null 2>&1"
+style = "fg:bright-white bold inverted"
+
+#
+# Show dotfiles git status when in $HOME
+#
+[custom.dotfiles_head]
+format = "[ 󱂵]($style)"
+when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]]"
+style = "fg:bright-purple inverted bg:black"
+[custom.dotfiles_tail]
+format = "[ [](fg:bright-purple)\n]($style)"
+when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]]"
+style = "fg:bright-purple inverted bg:black"
+[custom.dotfiles_changes]
+description = "Show the number of dotfiles changes pending commit"
+command = "git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME status --porcelain | grep -E '^( |)[MDAR]' | wc -l"
+format = "[ $output]($style)"
+when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]] && [[ $(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME status --porcelain | grep -E '^( |)[MDAR]' | wc -l) -gt 0 ]]"
+style = "fg:bright-purple inverted bg:black"
+[custom.dotfiles_commits_ahead]
+description = "Show the number of dotfiles commits ahead of origin"
+command = "git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME rev-list --right-only --count origin/$(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME branch --show-current)..HEAD"
+format = "[ $output]($style)"
+when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]] && [[ $(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME rev-list --right-only --count origin/$(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME branch --show-current)..HEAD) -gt 0 ]]"
+style = "fg:bright-purple inverted bg:black"
+[custom.dotfiles_commits_behind]
+description = "Show the number of dotfiles commits behind origin"
+command = "git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME rev-list --right-only --count origin/$(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME branch --show-current)..HEAD"
+format = "[ $output]($style)"
+when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]] && [[ $(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME rev-list --left-only --count origin/$(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME branch --show-current)..HEAD) -gt 0 ]]"
+style = "fg:bright-purple inverted bg:black"
