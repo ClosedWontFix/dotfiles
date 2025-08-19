@@ -1,0 +1,5 @@
+# File: ~/.x11vncrc
+# Author: ClosedWontFix
+
+localhost
+quiet

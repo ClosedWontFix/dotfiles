@@ -1,0 +1,11 @@
+# File ~/.config/git/ignore
+# Author: ClosedWontFix
+
+# Ignore Mac system files
+.DS_store
+
+# Ignore vi/vim swp files
+*.swp
+
+# Ignore log files
+*.log
