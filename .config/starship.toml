@@ -17,17 +17,12 @@ $hostname\
 [ ](fg:black bg:blue)\
 $directory\
 [ ](fg:blue)\
-${custom.docker}\
-$helm\
-$python\
-$terraform\
 $git_branch\
 $git_commit\
 $git_state\
 $git_metrics\
 $git_status\
 $fill\
-$cmd_duration\
 $status\
 $kubernetes\
 $battery\
@@ -38,7 +33,7 @@ ${custom.dotfiles_head}${custom.dotfiles_changes}${custom.dotfiles_commits_ahead
 $character"""
 
 [battery]
-format = '[$symbol$percentage]($style) '
+format = '[ $symbol$percentage]($style)'
 disabled = false
 [[battery.display]]
 threshold = 10
@@ -49,7 +44,7 @@ style = 'fg:#F78000 bold'
 
 [character]
 error_symbol = "[✗](bold bright-red)"
-success_symbol = "[▶](bold green)"
+success_symbol = "[](bold green)"
 
 [cmd_duration]
 format = "[$duration ]($style)"
@@ -61,16 +56,19 @@ truncation_symbol = '…/'
 style = "fg:bold yellow bg:blue"
 
 [directory.substitutions]
+"~" = " "
 "Desktop" = " "
-"Documents" = "󰈙 "
+"Documents" = "󰈙"
 "Downloads" = " "
-"Finances" = " "
+"Finances" = ""
 "GoogleDrive" = " "
 "Movies" = " "
 "Music" = " "
 "Pictures" = " "
+"Projects" = " "
 "Public" = " "
 "public_html" = " "
+"RedHat" = " "
 "Videos" = " "
 
 [fill]
@@ -107,10 +105,10 @@ symbol = " "
 
 [hostname]
 ssh_only = false
-# Hide the hostname in remote tmux sessions​
-# detect_env_vars = ['!TMUX', 'SSH_CONNECTION']
-format = '[@$hostname $ssh_symbol]($style)'
-ssh_symbol = '🌐 '
+# Hide the hostname in remote tmux sessions
+#detect_env_vars = ['!TMUX', 'SSH_CONNECTION']
+format = '[@$hostname[$ssh_symbol](fg:bright-red bold bg:black) ]($style)'
+ssh_symbol = ' 🌐'
 style = "fg:green bold bg:black"
 
 [kubernetes]
@@ -173,22 +171,22 @@ Debian = ""
 Fedora = ""
 FreeBSD = ""
 Kali = ""
-Linux = ""
+Linux = ""
 Macos = ""
 openSUSE = ""
-OracleLinux = ""
+OracleLinux = ""
 Raspbian = ""
 Redhat = ""
 RedHatEnterprise = ""
 RockyLinux = ""
 SUSE = ""
-Ubuntu = "󰕈"
+Ubuntu = ""
 Unknown = ""
 Windows = ""
 
 [python]
 format = '[$symbol]($style) '
-symbol = ' '
+symbol = ' '
 
 [sudo]
 disabled = false
@@ -200,11 +198,11 @@ disabled = false
 
 [terraform]
 format = '[$symbol $workspace]($style) '
-symbol = ' '
+symbol = '󱁢 '
 
 [time]
 disabled = false
-format = ' [\[ $time \]]($style) '
+format = ' [ $time ]($style) '
 
 [username]
 format = "[$user]($style)"
@@ -216,16 +214,16 @@ style_root = "fg:red bold inverted"
 [custom.docker]
 format = '[$symbol]($style) '
 style = 'fg:bold blue'
-symbol = ' '
+symbol = ' '
 when = '[[ -f docker-compose.yml ]] || [[ -f docker-compose.yaml ]] || [[ -f Dockerfile ]]'
 
 #
 # Show user.email when in git repo
 #
 [custom.git_config_email]
-description = "Output the current git user's configured email address."
+description = "The git user's configured email address"
 command = "git config user.email || echo 'undefined user.email'"
-format = "[   $output [](fg:bright-white)\n]($style)"
+format = "[ 󰊢  $output [](fg:bright-white)\n]($style)"
 when = "git rev-parse --is-inside-work-tree >/dev/null 2>&1"
 style = "fg:bright-white bold inverted"
 
@@ -233,28 +231,30 @@ style = "fg:bright-white bold inverted"
 # Show dotfiles git status when in $HOME
 #
 [custom.dotfiles_head]
+description = "A head character for custom.dotfiles* commands"
 format = "[ 󱂵]($style)"
 when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]]"
 style = "fg:bright-purple inverted bg:black"
 [custom.dotfiles_tail]
+description = "A tail character for custom.dotfiles* commands"
 format = "[ [](fg:bright-purple)\n]($style)"
 when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]]"
 style = "fg:bright-purple inverted bg:black"
 [custom.dotfiles_changes]
-description = "Show the number of dotfiles changes pending commit"
-command = "git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME status --porcelain | grep -E '^( |)[MDAR]' | wc -l"
+description = "The number of dotfiles modified, added, deleted, or renamed"
+command = "git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME status --porcelain | grep -E '^(\\s?)[MDAR]' | wc -l"
 format = "[ $output]($style)"
-when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]] && [[ $(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME status --porcelain | grep -E '^( |)[MDAR]' | wc -l) -gt 0 ]]"
+when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]] && [[ $(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME status --porcelain | grep -E '^(\\s?)[MDAR]' | wc -l) -gt 0 ]]"
 style = "fg:bright-purple inverted bg:black"
 [custom.dotfiles_commits_ahead]
-description = "Show the number of dotfiles commits ahead of origin"
-command = "git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME rev-list --right-only --count origin/$(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME branch --show-current)..HEAD"
+description = "The number of dotfiles commits ahead of origin"
+command = "git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME rev-list --count origin/$(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME branch --show-current)..HEAD"
 format = "[ $output]($style)"
-when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]] && [[ $(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME rev-list --right-only --count origin/$(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME branch --show-current)..HEAD) -gt 0 ]]"
+when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]] && [[ $(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME rev-list --count origin/$(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME branch --show-current)..HEAD) -gt 0 ]]"
 style = "fg:bright-purple inverted bg:black"
 [custom.dotfiles_commits_behind]
-description = "Show the number of dotfiles commits behind origin"
-command = "git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME rev-list --right-only --count origin/$(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME branch --show-current)..HEAD"
+description = "The number of dotfiles commits behind origin"
+command = "git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME rev-list --count HEAD..origin/$(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME branch --show-current)"
 format = "[ $output]($style)"
-when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]] && [[ $(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME rev-list --left-only --count origin/$(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME branch --show-current)..HEAD) -gt 0 ]]"
+when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]] && [[ $(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME rev-list --count HEAD..origin/$(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME branch --show-current)) -gt 0 ]]"
 style = "fg:bright-purple inverted bg:black"
