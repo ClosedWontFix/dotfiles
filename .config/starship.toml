@@ -14,9 +14,13 @@ $os\
 [ ](fg:black inverted bg:bright-blue)\
 $username\
 $hostname\
-[ ](fg:black bg:blue)\
+[ ](fg:blue bg:black)[ ](fg:black bg:blue)\
 $directory\
 [ ](fg:blue)\
+${custom.docker}\
+$helm\
+$terraform\
+$python\
 $git_branch\
 $git_commit\
 $git_state\
@@ -34,7 +38,7 @@ $character"""
 
 [battery]
 format = '[ $symbol$percentage]($style)'
-disabled = false
+disabled = true
 [[battery.display]]
 threshold = 10
 style = 'fg:red bold'
@@ -102,12 +106,13 @@ disabled = false
 [helm]
 format = "[$symbol]($style) "
 symbol = " "
+disabled = true
 
 [hostname]
 ssh_only = false
 # Hide the hostname in remote tmux sessions
-#detect_env_vars = ['!TMUX', 'SSH_CONNECTION']
-format = '[@$hostname[$ssh_symbol](fg:bright-red bold bg:black) ]($style)'
+detect_env_vars = ['!TMUX', 'SSH_CONNECTION']
+format = '[@$hostname[$ssh_symbol](fg:bright-red bold bg:black)]($style)'
 ssh_symbol = ' 🌐'
 style = "fg:green bold bg:black"
 
@@ -187,6 +192,7 @@ Windows = ""
 [python]
 format = '[$symbol]($style) '
 symbol = ' '
+disabled = true
 
 [sudo]
 disabled = false
@@ -199,9 +205,10 @@ disabled = false
 [terraform]
 format = '[$symbol $workspace]($style) '
 symbol = '󱁢 '
+disabled = true
 
 [time]
-disabled = false
+disabled = true
 format = ' [ $time ]($style) '
 
 [username]
@@ -216,6 +223,7 @@ format = '[$symbol]($style) '
 style = 'fg:bold blue'
 symbol = ' '
 when = '[[ -f docker-compose.yml ]] || [[ -f docker-compose.yaml ]] || [[ -f Dockerfile ]]'
+disabled = true
 
 #
 # Show user.email when in git repo
