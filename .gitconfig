@@ -17,8 +17,8 @@
 [include]
 	path = ~/.gitconfig-default
 
-[includeIf "gitdir:~/Projects/RedHat/"]
-	path = ~/.gitconfig-RedHat
+[includeIf "gitdir:~/Projects/work/"]
+	path = ~/.gitconfig-work
 
 [alias]
 	a = add
@@ -33,7 +33,7 @@
   # aliases = "! git config --get-regexp ^alias\\. | sed -e s/^alias\\.// -e s/\\ /\\ =\\ /"
   # ap = add -p
   # bb = "!git for-each-ref --sort='-authordate' --format='%(authordate)%09%(objectname:short)%09%(refname)' refs/heads | sed -e 's-refs/heads/--'"
-  # byme = "!git log --pretty="%H" --author='David Dreggors'| while read commit_hash; do git show --oneline --name-only $commit_hash|tail -n+2; done|sort|uniq" 
+  # byme = "!git log --pretty="%H" --author='David Dreggors'| while read commit_hash; do git show --oneline --name-only $commit_hash|tail -n+2; done|sort|uniq"
   # c = commit
   # cam = commit -a -m
   # cav = commit -a --verbose
@@ -60,5 +60,5 @@
   # prunepr = "!git for-each-ref refs/heads/pr-* --format='%(refname:short)' | while read ref ; do git branch -D $ref ; done"
   # s = status
   # ss = status -s
-  # sync = "!git fu && git com && git mum && git push" 
+  # sync = "!git fu && git com && git mum && git push"
   # tags = fetch upstream "refs/tags/*:refs/tags/*"
