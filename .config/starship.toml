@@ -6,6 +6,9 @@
 # Get editor completions based on the config schema
 "$schema" = 'https://starship.rs/config-schema.json'
 
+# Let commands have up to 1200ms before Starship warns
+command_timeout = 1200
+
 # Inserts a blank line between shell prompts
 add_newline = true
 
@@ -26,29 +29,28 @@ $git_commit\
 $git_state\
 $git_metrics\
 $git_status\
-$fill\
-$status\
-$kubernetes\
-$battery\
-$time\
 $line_break\
 ${custom.git_config_email}\
 ${custom.dotfiles_head}${custom.dotfiles_changes}${custom.dotfiles_commits_ahead}${custom.dotfiles_commits_behind}${custom.dotfiles_tail}\
 $character"""
+
+# right_format = """$status${custom.kubeadmin_divider}${custom.kube_print_cached}$battery$time"""
+right_format = """$status${custom.kubeadmin_divider}${custom.kube_print_cached}"""
+
 
 [battery]
 format = '[ $symbol$percentage]($style)'
 disabled = true
 [[battery.display]]
 threshold = 10
-style = 'fg:red bold'
+style = 'fg:bright-red bold'
 [[battery.display]]
 threshold = 30
 style = 'fg:#F78000 bold'
 
 [character]
 error_symbol = "[✗](bold bright-red)"
-success_symbol = "[](bold green)"
+success_symbol = "[](bold bright-green)"
 
 [cmd_duration]
 format = "[$duration ]($style)"
@@ -57,7 +59,7 @@ format = "[$duration ]($style)"
 format = '[$path ]($style)'
 truncation_length = 3
 truncation_symbol = '…/'
-style = "fg:bold yellow bg:blue"
+style = "fg:bold bright-yellow bg:blue"
 
 [directory.substitutions]
 "~" = " "
@@ -114,80 +116,144 @@ ssh_only = false
 detect_env_vars = ['!TMUX', 'SSH_CONNECTION']
 format = '[@$hostname[$ssh_symbol](fg:bright-red bold bg:black)]($style)'
 ssh_symbol = ' 🌐'
-style = "fg:green bold bg:black"
+style = "fg:bright-green bold bg:black"
 
 [kubernetes]
-format = "[ $symbol$context/$user( \\($namespace\\)) ]($style)"
-symbol = "󱃾 "
-disabled = false
+format      = "[ $symbol$context/$user( \\($namespace\\)) ]($style)"
+symbol      = "󱃾 "
+disabled    = false
 
-#
-# Kubernetes contexts for OpenShift Local 
-#
-# Warn when kubernetes user is kube:admin
-[[kubernetes.contexts]]
-context_pattern = "((.*.|)/api-|)crc-(?P<cluster>[\\w-]+)(-|:6443|).*"
-context_alias = "crc-$cluster"
-user_pattern = "kube(:|)admin(/|).*"
-user_alias = "kubeadmin"
-style = "fg:bright-red"
-[[kubernetes.contexts]]
-context_pattern = "((.*.|)/api-|)crc-(?P<cluster>[\\w-]+)(-|:6443|).*"
-context_alias = "crc-$cluster"
-user_pattern = "(?P<user>[\\w-]+)(/|).*"
-user_alias = "$user"
+[custom.kube_print_cached]
+description = "Render built-in kubernetes module only when cached auth is valid"
+shell  = ["bash"]   # ← no -lc
+when = """
+S="$HOME/.cache/kube-auth-status"; [ -r "$S" ] || exit 1
+ts=$(awk -F= '$1=="ts"{print $2}' "$S")
+auth_status=$(awk -F= '$1=="status"{print $2}' "$S")
+[ "${auth_status:-invalid}" = "valid" ] || exit 1
+max_age="${KUBE_CACHE_MAX_AGE:-1800}"
+now=$(date +%s)
+[ -n "$ts" ] && [ $((now - ts)) -le "$max_age" ]
+"""
+command = "/usr/bin/env starship module kubernetes"
+format  = "$output"
 
-#
-# Kubernetes contexts for OpenShift Container Platform
-#
-# Warn when kubernetes user is kube:admin
+[custom.kubeadmin_divider]
+description = "Left divider only for kube:admin in matching OCP contexts (cached)"
+shell = ["bash"]   # ← no -lc
+command = "true"
+format  = "[]($style)"
+style   = "fg:bright-red bg:black"
+when = """
+S="$HOME/.cache/kube-auth-status"; [ -r "$S" ] || exit 1
+ts=$(awk -F= '$1=="ts"{print $2}' "$S")
+auth_status=$(awk -F= '$1=="status"{print $2}' "$S")
+ctx=$(awk -F= '$1=="context"{print $2}' "$S")
+usr=$(awk -F= '$1=="user"{print $2}' "$S")
+[ "${auth_status:-invalid}" = "valid" ] || exit 1
+max_age="${KUBE_CACHE_MAX_AGE:-1800}"
+now=$(date +%s); [ -n "$ts" ] && [ $((now - ts)) -le "$max_age" ] || exit 1
+printf '%s' "$ctx" | grep -Eq '.*/api-[[:alnum:]_-]+-(ocp4?|openshift|osh)-.*' || exit 1
+printf '%s' "$usr" | grep -Eq 'kube:?admin(/|$)'
+"""
+
+# --- OpenShift Local (CRC) — match CRC first, no harsh warning styles ---
+
 [[kubernetes.contexts]]
-context_pattern = ".*/api-(?P<cluster>[\\w-]+)-(ocp(4|)|openshift|osh)-.*"
-context_alias = "$cluster"
-user_pattern = "kube(:|)admin/.*"
-user_alias = "**KUBEADMIN**"
-style = "fg:bold bright-red inverted"
-# Warn when kubernetes user is a "sa" account
+# Accepts "crc-<cluster>" with optional ".../api-" prefix
+context_pattern = "(^|.*/api-)crc-(?P<cluster>[\\w-]+)(-|:6443).*"
+context_alias   = "crc-$cluster"
+# kubeadmin on CRC: allowed / de-emphasized
+user_pattern    = "kube:?admin(/|).*"
+user_alias      = "kubeadmin"
+style           = "fg:bold bright-red"  # non-inverted, subtle
+
 [[kubernetes.contexts]]
-context_pattern = ".*/api-(?P<cluster>[\\w-]+)-(ocp(4|)|openshift|osh)-.*"
-context_alias = "$cluster"
-user_pattern = "(sa)-(?P<user>[\\w-]+(@.*.|))/.*"
-user_alias = "sa-$user"
-style = "fg:bold bright-red"
+# Any other user on CRC
+context_pattern = "(^|.*/api-)crc-(?P<cluster>[\\w-]+)(-|:6443).*"
+context_alias   = "crc-$cluster"
+user_pattern    = "(?P<user>[\\w-]+)(@[^/]+)?(/|).*"
+user_alias      = "$user"
+
+# --- OpenShift (non-CRC) — OCP / openshift / osh clusters ---
+
 [[kubernetes.contexts]]
-context_pattern = ".*/api-(?P<cluster>[\\w-]+)-(ocp(4|)|openshift|osh)-.*"
-context_alias = "$cluster"
-user_pattern = "(?P<user>[\\w-]+(@.*.|))/.*"
-user_alias = "$user"
+# OCP/openshift contexts get strong warning when kubeadmin
+context_pattern = ".*/api-(?P<cluster>[\\w-]+)-(ocp4?|openshift|osh)-.*"
+context_alias   = "$cluster"
+user_pattern    = "kube:?admin/.*"
+user_alias      = "**KUBEADMIN**"
+style           = "fg:bold bright-red inverted"
+
+[[kubernetes.contexts]]
+# Service accounts (sa-<name>) on OCP — warn (non-inverted)
+context_pattern = ".*/api-(?P<cluster>[\\w-]+)-(ocp4?|openshift|osh)-.*"
+context_alias   = "$cluster"
+user_pattern    = "(sa)-(?P<user>[\\w-]+)(@[^/]+)?/.*"
+user_alias      = "sa-$user"
+style           = "fg:bold bright-red"
+
+[[kubernetes.contexts]]
+# Any other user on OCP
+context_pattern = ".*/api-(?P<cluster>[\\w-]+)-(ocp4?|openshift|osh)-.*"
+context_alias   = "$cluster"
+user_pattern    = "(?P<user>[\\w-]+)(@[^/]+)?/.*"
+user_alias      = "$user"
+
+# --- Catch-alls for non-CRC, non-OCP Kubernetes clusters (GKE/EKS/AKS/vanilla) ---
+
+[[kubernetes.contexts]]
+# kubeadmin on any other cluster name — strong warning
+context_pattern = ".*"
+context_alias   = "$context"
+user_pattern    = "kube:?admin(/|).*"
+user_alias      = "**KUBEADMIN**"
+style           = "fg:bold bright-red inverted"
+
+[[kubernetes.contexts]]
+# service account on any other cluster — warn
+context_pattern = ".*"
+context_alias   = "$context"
+user_pattern    = "(sa)-(?P<user>[\\w-]+)(@[^/]+)?/.*"
+user_alias      = "sa-$user"
+style           = "fg:bold bright-red"
+
+[[kubernetes.contexts]]
+# any other user on any other cluster
+context_pattern = ".*"
+context_alias   = "$context"
+user_pattern    = "(?P<user>[\\w-]+)(@[^/]+)?/.*"
+user_alias      = "$user"
+
 
 [os]
-disabled = false
-format = "[ $symbol ]($style)"
-style = "fg:black bg:bright-blue"
+disabled  = false
+format    = "[ $symbol ]($style)"
+style     = "fg:black bg:bright-blue"
 
 [os.symbols]
-AlmaLinux = ""
-Alpine = ""
-Amazon = ""
-Android = ""
-Arch = ""
-CentOS = ""
-Debian = ""
-Fedora = ""
-FreeBSD = ""
-Kali = ""
-Linux = ""
-Macos = ""
-openSUSE = ""
-OracleLinux = ""
-Raspbian = ""
-Redhat = ""
-RedHatEnterprise = ""
-RockyLinux = ""
-SUSE = ""
-Ubuntu = ""
-Unknown = ""
-Windows = ""
+AlmaLinux         = ""
+Alpine            = ""
+Amazon            = ""
+Android           = ""
+Arch              = ""
+CentOS            = ""
+Debian            = ""
+Fedora            = ""
+FreeBSD           = ""
+Kali              = ""
+Linux             = ""
+Macos             = ""
+openSUSE          = ""
+OracleLinux       = ""
+Raspbian          = ""
+Redhat            = ""
+RedHatEnterprise  = ""
+RockyLinux        = ""
+SUSE              = ""
+Ubuntu            = ""
+Unknown           = ""
+Windows           = ""
 
 [python]
 format = '[$symbol]($style) '
@@ -197,9 +263,10 @@ disabled = true
 [sudo]
 disabled = false
 format = "[$user]($style)"
-style = "fg:red bold"
+style = "fg:bright-red bold"
 
 [status]
+symbol = '✘'
 disabled = false
 
 [terraform]
@@ -214,8 +281,8 @@ format = ' [ $time ]($style) '
 [username]
 format = "[$user]($style)"
 show_always = true
-style_user = "fg:green bold bg:black"
-style_root = "fg:red bold inverted"
+style_user = "fg:bright-green bold bg:black"
+style_root = "fg:bright-red bold inverted"
 
 
 [custom.docker]
@@ -230,39 +297,41 @@ disabled = true
 #
 [custom.git_config_email]
 description = "The git user's configured email address"
-command = "git config user.email || echo 'undefined user.email'"
-format = "[ 󰊢  $output [](fg:bright-white)\n]($style)"
-when = "git rev-parse --is-inside-work-tree >/dev/null 2>&1"
-style = "fg:bright-white bold inverted"
+command     = "git config user.email || echo 'undefined user.email'"
+format      = "[ 󰊢  $output [](fg:bright-white)\n]($style)"
+when        = "git rev-parse --is-inside-work-tree >/dev/null 2>&1"
+style       = "fg:bright-white bold inverted"
 
-#
-# Show dotfiles git status when in $HOME
-#
 [custom.dotfiles_head]
 description = "A head character for custom.dotfiles* commands"
-format = "[ 󱂵]($style)"
-when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]]"
-style = "fg:bright-purple inverted bg:black"
+format      = "[ 󱂵]($style)"
+when        = '[ -d "$HOME/.dotfiles" ] && [ "$PWD" = "$HOME" ]'
+style       = "fg:bright-purple inverted bg:black"
+
 [custom.dotfiles_tail]
 description = "A tail character for custom.dotfiles* commands"
-format = "[ [](fg:bright-purple)\n]($style)"
-when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]]"
-style = "fg:bright-purple inverted bg:black"
+format      = "[ [](fg:bright-purple)\n]($style)"
+when        = '[ -d "$HOME/.dotfiles" ] && [ "$PWD" = "$HOME" ]'
+style       = "fg:bright-purple inverted bg:black"
+
 [custom.dotfiles_changes]
 description = "The number of dotfiles modified, added, deleted, or renamed"
-command = "git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME status --porcelain | grep -E '^(\\s?)[MDAR]' | wc -l"
-format = "[ $output]($style)"
-when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]] && [[ $(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME status --porcelain | grep -E '^(\\s?)[MDAR]' | wc -l) -gt 0 ]]"
-style = "fg:bright-purple inverted bg:black"
+command     = 'git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" status --porcelain | wc -l'
+format      = "[ $output]($style)"
+when        = '[ -d "$HOME/.dotfiles" ] && [ "$PWD" = "$HOME" ] && [ "$(git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" status --porcelain | wc -l)" -gt 0 ]'
+style       = "fg:bright-purple inverted bg:black"
+
 [custom.dotfiles_commits_ahead]
-description = "The number of dotfiles commits ahead of origin"
-command = "git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME rev-list --count origin/$(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME branch --show-current)..HEAD"
-format = "[ $output]($style)"
-when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]] && [[ $(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME rev-list --count origin/$(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME branch --show-current)..HEAD) -gt 0 ]]"
-style = "fg:bright-purple inverted bg:black"
+description = "The number of dotfiles commits ahead of upstream"
+command     = 'git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" rev-list --count @{u}..HEAD 2>/dev/null'
+format      = "[ $output]($style)"
+when        = '[ -d "$HOME/.dotfiles" ] && [ "$PWD" = "$HOME" ] && n=$(git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" rev-list --count @{u}..HEAD 2>/dev/null); [ "${n:-0}" -gt 0 ]'
+style       = "fg:bright-purple inverted bg:black"
+
 [custom.dotfiles_commits_behind]
-description = "The number of dotfiles commits behind origin"
-command = "git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME rev-list --count HEAD..origin/$(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME branch --show-current)"
-format = "[ $output]($style)"
-when = "[[ -d $HOME/.dotfiles/ ]] && [[ $PWD = $HOME ]] && [[ $(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME rev-list --count HEAD..origin/$(git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME branch --show-current)) -gt 0 ]]"
-style = "fg:bright-purple inverted bg:black"
+description = "The number of dotfiles commits behind upstream"
+command     = 'git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" rev-list --count HEAD..@{u} 2>/dev/null'
+format      = "[ $output]($style)"
+when        = '[ -d "$HOME/.dotfiles" ] && [ "$PWD" = "$HOME" ] && n=$(git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" rev-list --count HEAD..@{u} 2>/dev/null); [ "${n:-0}" -gt 0 ]'
+style       = "fg:bright-purple inverted bg:black"
+

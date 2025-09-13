@@ -1,0 +1,20 @@
+= dotfiles
+
+== Shell
+* sh
+* zsh
+* bash
+
+== Terminals
+* alacritty
+* ghostty
+
+== Editors
+* vim
+* neovim
+
+== Tools
+* git
+* starship
+
+

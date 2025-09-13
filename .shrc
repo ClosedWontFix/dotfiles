@@ -1,0 +1,587 @@
+# -*- sh -*-
+# vim: ft=sh
+#
+# File: ~/.shrc
+# Author: ClosedWontFix
+#
+
+# Use 'type' for command detection: POSIX-standard and BusyBox-friendly (avoid 'which' / 'command -v').
+
+# Skip for non-interactive shells
+[ -z "${PS1:-}" ] && return
+# Load-once guard (allows manual re-source later)
+[ -n "${__SHRC_LOADED-}" ] && return
+__SHRC_LOADED=1
+
+#
+# Helper functions
+#
+
+# Prepend a dir to PATH only if it isn’t already present.
+path_prepend() {
+  [ -n "$1" ] || return
+  case ":$PATH:" in
+    *:"$1":*) ;;
+    *) PATH="$1:$PATH" ;;
+  esac
+}
+
+# Platform detection: set $PLATFORM (ish, termux, asuswrt-merlin, openwrt, macos, linux, unknown)
+detect_platform() {
+  PLATFORM=unknown
+
+  _uname_s="$(uname -s 2>/dev/null || echo unknown)"
+  _uname_a="$(uname -a 2>/dev/null || echo)"
+
+  case "$_uname_s" in
+    Darwin)
+      PLATFORM=macos
+      ;;
+    Linux)
+      # iSH (iOS userspace emulator)
+      case "$_uname_a" in
+        *[iI][sS][hH]*)
+          PLATFORM=ish
+          ;;
+        *ASUSWRT-Merlin*)
+          PLATFORM=asuswrt-merlin
+          ;;
+        *)
+          if [ -d /proc/ish ]; then
+            PLATFORM=ish
+          # Termux (Android)
+          elif [ -n "${TERMUX_VERSION-}" ] || [ -n "${ANDROID_STORAGE-}" ] \
+              || [ -d /data/data/com.termux/files/usr ]; then
+            PLATFORM=termux
+          elif [ -n "${PREFIX-}" ]; then
+            case "$PREFIX" in
+              */com.termux/*) PLATFORM=termux ;;
+            esac
+          # OpenWrt
+          elif [ -f /etc/openwrt_release ] || { [ -d /rom ] && [ -d /overlay ]; }; then
+            PLATFORM=openwrt
+          else
+            PLATFORM=linux
+          fi
+          ;;
+        esac
+        ;;
+    *)
+      PLATFORM=unknown
+      ;;
+  esac
+  export PLATFORM
+}
+
+detect_platform
+
+# Convenience booleans (ISH, TERMUX, MERLIN, OPENWRT, MACOS, LINUX)
+case "$PLATFORM" in
+  ish)            ISH=1 ;;
+  termux)         TERMUX=1 ;;
+  asuswrt-merlin) MERLIN=1 ;;
+  openwrt)        OPENWRT=1 ;;
+  macos)          MACOS=1 ;;
+  linux)          LINUX=1 ;;
+esac
+export ISH TERMUX MERLIN OPENWRT MACOS LINUX
+
+# Example usage:
+# [ "$ISH" = 1 ] && echo "Hello from iSH"
+# [ "$MERLIN" = 1 ] && echo "Hello from ASUSWRT-Merlin"
+# [ "$OPENWRT" = 1 ] && echo "Hello from OpenWrt"
+
+# Core functions
+#
+
+# mkcd: create and cd into a directory
+mkcd() {
+  [ -n "$1" ] || { printf "Usage: mkcd <dir>\\n" >&2; return 1; }
+  mkdir -p -- "$1" && cd -- "$1" || return
+}
+
+# extract: unpack common archive formats
+extract() {
+  f=$1
+  [ -n "$f" ] || { printf "Usage: extract <archive>\\n" >&2; return 1; }
+  case $f in
+    *.tar.bz2)   tar xjf "$f" ;;
+    *.tar.gz)    tar xzf "$f" ;;
+    *.tar.xz)    tar xJf "$f" ;;
+    *.bz2)       bunzip2 "$f" ;;
+    *.gz)        gunzip "$f" ;;
+    *.tar)       tar xf "$f" ;;
+    *.tbz2)      tar xjf "$f" ;;
+    *.tgz)       tar xzf "$f" ;;
+    *.zip)       unzip "$f" ;;
+    *.Z)         uncompress "$f" ;;
+    *.7z)        7z x "$f" ;;
+    *)           printf "'%s' cannot be extracted\\n" "$f" ;;
+  esac
+}
+
+# reload_v42loopback: reload v4l2loopback kernel module if available
+if type modprobe >/dev/null 2>&1 && rpm -q kmod-v4l2loopback >/dev/null 2>&1; then
+  reload_v42loopback() {
+    sudo modprobe -r v4l2loopback
+    sudo modprobe v4l2loopback
+  }
+fi
+
+# jiggler: move the mouse periodically to prevent idle
+if type xdotool >/dev/null 2>&1; then
+  jiggler() {
+    while true; do
+      xdotool mousemove_relative -- 1 1
+      sleep 1
+      xdotool mousemove_relative -- -1 -1
+      sleep 60
+    done
+  }
+fi
+
+# magic8ball: toy function with random answers
+magic8ball() {
+  echo
+  echo "Shaking ..."
+  echo
+  sleep 2
+  value="$( (awk 'BEGIN { srand(); print int(rand() % 3) }'))"
+  case $value in
+    0) echo "All signs point to yes." ;;
+    1) echo "The answer is no." ;;
+    2) echo "Ask again later." ;;
+    3) echo "Outlook hazy." ;;
+  esac
+  echo
+}
+
+# Yazi integration: in bash/zsh, wrap to cd into last dir on exit; in plain sh, alias to yazi.
+if type yazi >/dev/null 2>&1; then
+  if [ -n "$BASH_VERSION" ] || [ -n "$ZSH_VERSION" ]; then
+    y() {
+      # Create a temporary file to store Yazi's last working directory
+      if type mktemp >/dev/null 2>&1; then
+        tmp=$(mktemp "${TMPDIR:-/tmp}/yazi-cwd.XXXXXX") || return
+      else
+        tmp="${TMPDIR:-/tmp}/yazi-cwd.$$"
+        : > "$tmp" || return
+      fi
+
+      # Define a cleanup helper and ensure it runs on exit/signals
+      y__cleanup() { [ -n "$tmp" ] && rm -f -- "$tmp"; }
+      trap 'y__cleanup' HUP INT TERM EXIT
+
+      # Run yazi, telling it where to write the last cwd
+      yazi "$@" --cwd-file="$tmp"
+
+      # Read the cwd back from the temp file (strip newlines)
+      if [ -r "$tmp" ]; then
+        cwd=$(tr -d '\n' < "$tmp")
+        if [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+          cd -- "$cwd" || :
+        fi
+      fi
+
+      # Cleanup the temp file and clear the trap
+      y__cleanup
+      trap - HUP INT TERM EXIT
+    }
+
+  else
+    alias y='yazi'
+  fi
+
+fi
+
+# Location used by .profile to persist agent env
+agent_env="${AGENT_ENV:-$HOME/.ssh/agent.env}"
+
+# Show ssh-agent status (pid, sock, list keys).
+sshagent_info() {
+  printf 'SSH_AUTH_SOCK=%s\n' "${SSH_AUTH_SOCK:-<unset>}"
+  printf 'SSH_AGENT_PID=%s\n' "${SSH_AGENT_PID:-<unset>}"
+  if [ -n "$SSH_AUTH_SOCK" ] && ssh-add -l >/dev/null 2>&1; then
+    echo "status: OK (agent reachable)"
+  else
+    echo "status: not available"
+  fi
+}
+
+# Load keys into the agent if needed; start agent if missing.
+sshagent_load() {
+  [ -r "$agent_env" ] || { echo "no agent env: $agent_env"; return 1; }
+  # shellcheck source=/dev/null
+  . "$agent_env"
+  if [ -S "$SSH_AUTH_SOCK" ] && ssh-add -l >/dev/null 2>&1; then
+    echo "loaded agent from $agent_env"
+    return 0
+  fi
+  echo "saved agent invalid; unset"
+  unset SSH_AUTH_SOCK SSH_AGENT_PID
+  return 1
+}
+
+# Kill ssh-agent and clear saved environment.
+sshagent_purge() {
+  # Try current env first
+  if [ -n "$SSH_AGENT_PID" ] && kill -0 "$SSH_AGENT_PID" 2>/dev/null; then
+    ssh-agent -k >/dev/null 2>&1 || true
+  fi
+  # Then any saved env
+  if [ -r "$agent_env" ]; then
+    # shellcheck source=/dev/null
+    . "$agent_env"
+    if [ -n "$SSH_AGENT_PID" ] && kill -0 "$SSH_AGENT_PID" 2>/dev/null; then
+      ssh-agent -k >/dev/null 2>&1 || true
+    fi
+  fi
+  unset SSH_AUTH_SOCK SSH_AGENT_PID
+  rm -f "$agent_env"
+  echo "ssh-agent purged"
+}
+
+# Restart ssh-agent from scratch and save new environment.
+sshagent_restart() {
+  sshagent-purge >/dev/null 2>&1
+
+  eval "$(ssh-agent -s)" >/dev/null
+  if [ -n "$SSH_AUTH_SOCK" ]; then
+    umask 077
+    mkdir -p "$HOME/.ssh"
+    {
+      printf 'SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n' "$SSH_AUTH_SOCK"
+      printf 'SSH_AGENT_PID=%s; export SSH_AGENT_PID;\n' "$SSH_AGENT_PID"
+    } > "$agent_env"
+    echo "ssh-agent restarted (env saved to $agent_env)"
+  else
+    echo "failed to start ssh-agent"
+    return 1
+  fi
+}
+
+# Environment Configuration
+#
+
+# Enable color prompt only when terminal supports it.
+case "$TERM" in
+  xterm-color|*-256color|gnome*|alacritty|*-ghostty|kitty) color_prompt=yes ;;
+esac
+
+# Load dircolors on GNU systems; otherwise set macOS color vars.
+if [ "$color_prompt" = "yes" ]; then
+  if type dircolors >/dev/null 2>&1; then
+    # Linux / GNU dircolors
+    eval "$(dircolors -b "$HOME"/.dircolors)" || eval "$(dircolors -b)"
+  elif [ "${MACOS:-0}" -eq 1 ]; then
+    # macOS ls colors
+    CLICOLOR=1
+    LSCOLORS='ExFxCxDxBxegedabagacad'
+    export CLICOLOR LSCOLORS
+  fi
+fi
+
+# Project and bin directories: ensure existence and prepend to $PATH
+# Only run for non-root users (id -u != 0)
+if [ "$(id -u)" -ne 0 ]; then
+  # Create ~/Projects if it doesn't exist
+  [ -d "$HOME/Projects" ] || mkdir -p "$HOME/Projects"
+
+  # Create ~/.local/bin if missing, and add it to $PATH
+  [ -d "$HOME/.local/bin" ] || mkdir -p "$HOME/.local/bin"
+  path_prepend "$HOME/.local/bin"
+
+  # Create ~/bin if missing, and add it to $PATH
+  [ -d "$HOME/bin" ] || mkdir -p "$HOME/bin"
+  path_prepend "$HOME/bin"
+
+  # Add Go bin path if Go is installed
+  if type go >/dev/null 2>&1; then
+    path_prepend "$HOME/go/bin"
+  fi
+fi
+
+# Use less with colors/mouse; skip if busybox ‘less’ is in use.
+if type less >/dev/null 2>&1; then
+  if ! readlink /usr/bin/less 2>/dev/null | grep -q busybox; then
+    PAGER='less -R'
+    # Enable mouse scrolling in less
+    LESS='--mouse'
+    export PAGER LESS
+  fi
+
+  # Use UTF-8 charset when locale indicates UTF-8.
+  if printf '%s\n' "$LANG" | grep -q 'UTF-8'; then
+    LESSCHARSET='UTF-8'
+    export LESSCHARSET
+  fi
+fi
+
+# Disable pager for systemd tools (journalctl, systemctl).
+if [ -e /run/systemd/system ]; then
+  SYSTEMD_PAGER=''
+  export SYSTEMD_PAGER
+fi
+
+# Aliases
+#
+
+# Grep family: enable colored matches by default (plain + extended + fixed + gzip variants)
+alias grep='grep --color=auto'
+alias egrep='grep -E --color=auto'
+alias fgrep='grep -F --color=auto'
+if type zgrep >/dev/null 2>&1; then
+  alias zgrep='zgrep --color=auto'
+  alias zegrep='zgrep -E --color=auto'
+  alias zfgrep='zgrep -F --color=auto'
+fi
+
+# Quick navigation aliases for moving up directory levels
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+
+# Make cp, mv, and rm interactive and verbose by default (prompt before overwrite, show actions)
+alias cp='cp -iv'
+alias mv='mv -iv'
+alias rm='rm -iv'
+
+# Shortcut to print current date/time in sortable format (YYYYMMDD-HHMMSS)
+alias datestamp='date +%Y%m%d-%H%M%S'
+# Shortcuts to datestamp for convenience
+alias now='datestamp'
+alias ts='datestamp'
+
+# Show $PATH entries one per line for easier reading
+alias path='printf %s\\n "$PATH" | tr ":" "\\n"'
+
+# Convenience: add keys only if none are loaded
+alias addkeys='ssh-add -l >/dev/null || ssh-add'
+
+# df: prefer human-readable output (-h) if the binary supports it
+if df -h >/dev/null 2>&1; then
+  alias df='df -h'
+else
+  alias df='df'
+fi
+
+# du: test with /dev/null to avoid scanning $PWD; prefer -h if supported
+if du -h /dev/null >/dev/null 2>&1; then
+  alias du='du -h'
+else
+  alias du='du'
+fi
+
+# Prefer eza when available (alias ls -> eza)
+if type eza >/dev/null 2>&1; then
+  alias ls='eza --color=auto'
+  alias l='eza -F --color=auto'
+  alias la='eza -A --color=auto'
+  alias ll='eza -l --color=auto'
+  alias lla='eza -lA --color=auto'
+  alias ltr='eza -l -snew --color=auto'
+  alias ltra='eza -lA -snew --color=auto'
+  alias l.='eza -d .* --color=auto'
+  alias ll.='eza -ld .* --color=auto'
+else
+  alias ls='ls -h --color=auto'
+  alias l='ls -CF --color=auto'
+  alias la='ls -Ah --color=auto'
+  alias ll='ls -lh --color=auto'
+  alias lla='ls -lAh --color=auto'
+  alias ltr='ls -lhtr --color=auto'
+  alias ltra='ls -lAhtr --color=auto'
+  alias l.='ls -d .* --color=auto'
+  alias ll.='ls -ld .* --color=auto'
+fi
+
+# git aliases if command exists
+if type git >/dev/null 2>&1; then
+  # If BusyBox less is in use, disable git pager
+  if readlink /usr/bin/less 2>/dev/null | grep -q busybox; then
+    export GIT_PAGER=cat
+  fi
+
+  alias g=git
+  alias ga='git add'
+  alias gA='git add -A'
+  alias gco='git commit'
+  alias gl='git log --oneline'
+  alias gpl='git pull'
+  alias gpu='git push'
+  alias gst='git status'
+
+  # Dotfiles shortcut: execute if ~/.dotfiles is present; warn if missing.
+  if [ -d "$HOME/.dotfiles" ]; then
+    # Bootstrap reference (run once on a new machine):
+    #   git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME clone --bare git@github.com:ClosedWontFix/dotfiles_private.git ~/.dotfiles
+    #   git --git-dir=$HOME/.dotfiles/ config status.showUntrackedFiles false
+    #   git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME checkout master
+    alias dot='git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME'
+  else
+    # Provide a no-op “dot” that explains why it’s unavailable.
+    dot_unavailable() {
+      echo "$HOME/.dotfiles is missing. \"dot\" is unavailable."
+    }
+    alias dot='dot_unavailable'
+  fi
+  alias d='dot'
+  alias da='dot add'
+  alias dco='dot commit --allow-empty-message -m \"\"'
+  alias dpl='dot pull'
+  alias dpu='dot push'
+  alias dst='dot status'
+fi
+
+# oc aliases if command exists
+if type oc >/dev/null 2>&1; then
+  alias ogp='oc get pods'
+  alias ogs='oc get svc'
+  alias ogn='oc get nodes'
+  alias octx='oc config use-context'
+  alias okns='oc config set-context --current --namespace'
+fi
+
+# kubectl aliases if command exists
+if type kubectl >/dev/null 2>&1; then
+  alias k='kubectl'
+  alias kgp='kubectl get pods'
+  alias kgs='kubectl get svc'
+  alias kgn='kubectl get nodes'
+  alias kctx='kubectl config use-context'
+  alias kns='kubectl config set-context --current --namespace'
+fi
+
+# rsync: default to verbose output with progress indicator if command exists
+if type rsync >/dev/null 2>&1; then
+  alias rsync='rsync -v --progress'
+fi
+
+# Always run package managers with sudo (dnf preferred, fallback to yum)
+if type dnf >/dev/null 2>&1; then
+  alias dnf='sudo dnf'
+  alias yum='sudo dnf'
+elif type yum >/dev/null 2>&1; then
+  alias yum='sudo yum'
+fi
+
+# Prefer htop when available (alias top -> htop)
+if type htop >/dev/null 2>&1; then
+  alias top='htop'
+fi
+
+# If magic8ball function is defined, provide a shorter alias 8ball
+if type magic8ball 2>/dev/null | grep -q 'function'; then
+ alias 8ball='magic8ball'
+fi
+
+# Codium/VSCode compatibility alias
+if type codium >/dev/null 2>&1 && ! type code >/dev/null 2>&1; then
+  alias code='codium'
+elif [ -d "/Applications/VSCodium.app" ]; then
+  alias code='/Applications/VSCodium.app/Contents/Resources/app/bin/codium'
+elif [ -d "/Applications/Visual Studio Code.app" ]; then
+  alias code='/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code'
+fi
+
+# Pick preferred editor (nvim > vim > vi)
+_EDITOR_BIN=
+for e in nvim vim vi; do
+  if type "$e" >/dev/null 2>&1; then _EDITOR_BIN="$e"; break; fi
+done
+[ -n "$_EDITOR_BIN" ] && { EDITOR="$_EDITOR_BIN"; export EDITOR; }
+
+case "$_EDITOR_BIN" in
+  nvim)
+    alias vi='nvim'
+    alias vim='nvim'
+    ;;
+  vim)
+    alias vi='vim'
+    ;;
+esac
+
+# Prefer personal Lynx config and enable mouse support.
+if type lynx >/dev/null 2>&1; then
+  [ -r "$HOME/.lynx.cfg" ] && export LYNX_CFG="$HOME/.lynx.cfg"
+  alias lynx='lynx -use_mouse'
+fi
+
+# GnuPG: set TTY and (re)load the agent; required for interactive pinentry.
+if type gpg >/dev/null 2>&1; then
+  GPG_TTY="$(tty)"
+  export GPG_TTY
+  gpgconf --launch gpg-agent >/dev/null 2>&1
+  gpgconf --reload gpg-agent >/dev/null 2>&1
+
+  # On macOS, prefer GUI pinentry when installed (no action here—see config below).
+  # Install:  brew install pinentry-mac
+  # Add to ~/.gnupg/gpg-agent.conf:
+  #   pinentry-program /opt/homebrew/bin/pinentry-mac
+  # Reload:   gpgconf --reload gpg-agent
+  #
+  # This check only verifies that pinentry-mac is installed. The ':' command
+  # is a no-op placeholder; no action is taken here.
+  if [ "${MACOS:-0}" -eq 1 ] && type pinentry-mac >/dev/null 2>&1; then
+    :
+  fi
+fi
+
+# Platform-specific tweaks
+#
+
+# Homebrew setup: detect brew, set HOMEBREW_PREFIX, add relevant bins
+if [ "${MACOS:-0}" -eq 1 ] || [ "${LINUX:-0}" -eq 1 ]; then
+  # Load brew env once (avoid PATH duplication)
+  if [ -z "$__BREW_SHELLENV_DONE" ]; then
+    if type brew >/dev/null 2>&1; then
+      eval "$(brew shellenv)"
+    elif [ -x /opt/homebrew/bin/brew ]; then
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [ -x /usr/local/bin/brew ]; then
+      eval "$(/usr/local/bin/brew shellenv)"
+    elif [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
+      eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    fi
+    __BREW_SHELLENV_DONE=1
+  fi
+
+  if [ -n "$HOMEBREW_PREFIX" ]; then
+  # Homebrew shims: add tools/aliases only when their dirs exist.
+    [ -d "$HOMEBREW_PREFIX/opt/curl/bin" ] && path_prepend "$HOMEBREW_PREFIX/opt/curl/bin"
+    [ -d "$HOMEBREW_PREFIX/opt/e2fsprogs/bin" ] && path_prepend "$HOMEBREW_PREFIX/opt/e2fsprogs/bin"
+    [ -d "$HOMEBREW_PREFIX/opt/e2fsprogs/sbin" ] && path_prepend "$HOMEBREW_PREFIX/opt/e2fsprogs/sbin"
+
+    # GNU findutils “gnubin” shims (use g* tools via explicit aliases).
+    if [ -d "$HOMEBREW_PREFIX/opt/findutils/libexec/gnubin" ]; then
+      alias find='$HOMEBREW_PREFIX/opt/findutils/libexec/gnubin/bin/gfind'
+      alias locate='$HOMEBREW_PREFIX/opt/findutils/libexec/gnubin/bin/glocate'
+      alias updatedb='$HOMEBREW_PREFIX/opt/findutils/libexec/gnubin/bin/gupdatedb'
+      alias xargs='$HOMEBREW_PREFIX/opt/findutils/libexec/gnubin/bin/gxargs'
+    fi
+  fi
+fi
+
+# On iSH, wrap nmap so it always runs as the unprivileged 'nmap' user (avoid root)
+if [ "${ISH:-0}" -eq 1 ] && type nmap >/dev/null 2>&1; then
+  alias nmap='runuser -u nmap -- nmap'
+fi
+
+# Optional includes
+#
+
+# Work-specific aliases include
+# shellcheck source=/dev/null
+[ "$(id -u)" -ne 0 ] && [ -r "$HOME/.aliases.work" ] && . "$HOME/.aliases.work"
+
+# Machine-local interactive tweaks
+# Cache short hostname once (fallback if -s not supported)
+if type hostname >/dev/null 2>&1; then
+  HOST_SHORT=${HOST_SHORT:-$(hostname -s 2>/dev/null || hostname 2>/dev/null)}
+fi
+
+# shellcheck source=/dev/null
+[ -n "$HOST_SHORT" ] && [ -r "$HOME/.shrc.$HOST_SHORT" ] && . "$HOME/.shrc.$HOST_SHORT"
+
+# Allow manual re-sourcing (e.g. '. ~/.shrc' after edits) by clearing the guard
+unset __SHRC_LOADED

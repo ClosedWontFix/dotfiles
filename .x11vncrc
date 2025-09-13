@@ -1,5 +1,12 @@
+#
 # File: ~/.x11vncrc
 # Author: ClosedWontFix
+#
 
 localhost
+display :0
+# http://www.karlrunge.com/x11vnc/faq.html#faq-remap-capslock: fixes Caps_Lock
+skip_lockkeys
+# http://www.karlrunge.com/x11vnc/faq.html#faq-repeated-keys: fixes repeated keys
+repeat
 quiet

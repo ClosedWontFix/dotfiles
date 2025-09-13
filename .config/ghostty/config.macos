@@ -1,0 +1,156 @@
+# -*- conf-toml -*-
+# vim: ft=toml
+# Ghostty Config — macOS specific
+
+##################################
+# Fonts
+##################################
+# Preferred font
+font-family = "MesloLGS Nerd Font"
+# Default font size
+font-size = 15.0
+
+##################################
+# Colors & Appearance
+##################################
+# Color theme
+theme = tango_dark
+# Use bright colors for bold text
+bold-is-bright = true
+# Transparency level
+background-opacity = 0.9
+# Blur background when transparent
+background-blur = true
+# Dim inactive panes/splits
+unfocused-split-opacity = 0.6
+
+##################################
+# Windowing & Layout
+##################################
+# Window decorations handled by system (titlebar/buttons)
+window-decoration = auto
+# Default window width (columns)
+window-width = 120
+# Default window height (rows)
+window-height = 36
+# Starting directory for new terminals (inherit parent process)
+working-directory = home
+# New windows inherit cwd from focused terminal
+window-inherit-working-directory = true
+# Do not inherit font size for new windows
+window-inherit-font-size = false
+# Place new tabs at end of tab list
+window-new-tab-position = end
+# Scrollback buffer lines
+scrollback-limit = 10000
+
+# Hide mouse cursor while typing
+mouse-hide-while-typing = true
+
+##################################
+# Shell Integration
+##################################
+# Auto-detect supported shells
+shell-integration = detect
+# Disable Ghostty cursor integration
+shell-integration-features = no-cursor
+# Disable OS notifications
+app-notifications = false
+
+##################################
+# macOS Specific Options
+##################################
+# Quit app when last window is closed
+quit-after-last-window-closed = true
+# Treat Option key as Alt (choose: left | right | both | none)
+macos-option-as-alt = left
+# Disable auto-updates (manage updates manually)
+auto-update = off
+# Example optional settings (commented out)
+#macos-hide-on-last-window-closed = true
+#macos-traditional-fullscreen = true
+#macos-titlebar-style = unified
+
+##################################
+# Clipboard & Selection
+##################################
+# Copy selection automatically to clipboard
+copy-on-select = clipboard
+# Optionally trim whitespace when copying
+clipboard-trim-trailing-spaces = true
+
+###################################
+# Keybindings (Custom Shortcuts)
+###################################
+
+# --------------------------------------------------------------------
+# Clipboard operations
+# --------------------------------------------------------------------
+keybind = ctrl+shift+c=copy_to_clipboard
+keybind = ctrl+shift+v=paste_from_clipboard
+# Disable macOS defaults (Cmd+C/V)
+keybind = cmd+shift+c=unbind
+keybind = cmd+shift+v=unbind
+
+# --------------------------------------------------------------------
+# Selection
+# --------------------------------------------------------------------
+keybind = ctrl+shift+a=select_all
+keybind = cmd+a=unbind
+
+# --------------------------------------------------------------------
+# Tabs
+# --------------------------------------------------------------------
+keybind = ctrl+shift+t=new_tab
+keybind = ctrl+shift+w=close_tab
+# Disable conflicting macOS defaults
+keybind = cmd+t=unbind
+keybind = cmd+shift+w=unbind
+
+# Direct tab switching (Alt+Number)
+keybind = alt+physical:one=goto_tab:1
+keybind = alt+physical:two=goto_tab:2
+keybind = alt+physical:three=goto_tab:3
+keybind = alt+physical:four=goto_tab:4
+keybind = alt+physical:five=goto_tab:5
+keybind = alt+physical:six=goto_tab:6
+keybind = alt+physical:seven=goto_tab:7
+keybind = alt+physical:eight=goto_tab:8
+# Disable Super+Number (macOS default)
+keybind = super+physical:one=unbind
+keybind = super+physical:two=unbind
+keybind = super+physical:three=unbind
+keybind = super+physical:four=unbind
+keybind = super+physical:five=unbind
+keybind = super+physical:six=unbind
+keybind = super+physical:seven=unbind
+keybind = super+physical:eight=unbind
+
+# --------------------------------------------------------------------
+# Windows / Splits
+# --------------------------------------------------------------------
+keybind = ctrl+shift+n=new_window
+keybind = ctrl+shift+minus=new_split:down
+keybind = ctrl+backslash=new_split:right
+keybind = ctrl+shift+backslash=new_split:right
+
+# --------------------------------------------------------------------
+# Font size
+# --------------------------------------------------------------------
+keybind = ctrl+0=reset_font_size
+keybind = ctrl+equal=increase_font_size:1
+keybind = ctrl+minus=decrease_font_size:1
+# Disable macOS font shortcuts
+keybind = cmd+0=unbind
+keybind = cmd+equal=unbind
+keybind = cmd+plus=unbind
+keybind = cmd+minus=unbind
+
+# --------------------------------------------------------------------
+# Config management
+# --------------------------------------------------------------------
+keybind = ctrl+shift+comma=reload_config
+keybind = cmd+shift+comma=unbind
+keybind = ctrl+comma=open_config
+keybind = cmd+comma=unbind
+

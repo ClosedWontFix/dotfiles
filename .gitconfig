@@ -1,14 +1,64 @@
+# File: ~/.gitconfig
+# Author: ClosedWontFix
+
 [core]
-  editor = "if [[ -f /usr/bin/nvim ]]; then EDITOR='nvim'; elif [[ -f /usr/bin/vim ]]; then EDITOR='vim'; else EDITOR='vi'; fi; $EDITOR"
+  editor = "if [[ -x /usr/bin/nvim ]] || [[ -x /usr/local/bin/nvim ]] || [[ -x /opt/homebrew/bin/nvim ]]; then EDITOR='nvim'; elif [[ -x /usr/bin/vim ]]; then EDITOR='vim'; else EDITOR='vi'; fi; $EDITOR"
 	pager = LESSCHARSET=UTF-8 less -R
+
 [init]
 	defaultBranch = master
+
+[pager]
+	branch = false
+
 [push]
 	autoSetupRemote = true
-[include]
-    # Define default commit email address
-    path = ~/.gitconfig-default
 
-[includeIf "gitdir:~/work/"]
-    # Define secondary commit email address when in a git dir in ~/work/
-    path = ~/.gitconfig-work
+[include]
+	path = ~/.gitconfig-default
+
+[includeIf "gitdir:~/Projects/RedHat/"]
+	path = ~/.gitconfig-RedHat
+
+[alias]
+	a = add
+	b = branch
+	cl = clone
+	co = checkout
+  ls = ls-tree -r --name-only
+	nc = commit --allow-empty-message -m \"\"
+	pl = pull
+	pu = push
+	st = status
+  # aliases = "! git config --get-regexp ^alias\\. | sed -e s/^alias\\.// -e s/\\ /\\ =\\ /"
+  # ap = add -p
+  # bb = "!git for-each-ref --sort='-authordate' --format='%(authordate)%09%(objectname:short)%09%(refname)' refs/heads | sed -e 's-refs/heads/--'"
+  # byme = "!git log --pretty="%H" --author='David Dreggors'| while read commit_hash; do git show --oneline --name-only $commit_hash|tail -n+2; done|sort|uniq" 
+  # c = commit
+  # cam = commit -a -m
+  # cav = commit -a --verbose
+  # cm = commit -m
+  # com = checkout main
+  # cob = checkout -b
+  # copr = "!f() { git fetch -fu origin refs/pull/$1/head:pr-$1; git checkout pr-$1; } ; f"
+  # cv = commit --verbose
+  # d = diff
+  # dc = diff --cached
+  # ds = diff --stat
+  # dt = difftool
+  # fu = fetch upstream
+  # l = log --pretty=format:"%C(yellow)%h\\ %ad%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate --date=short
+  # la = "!git config -l | grep alias | cut -c 7-"
+  # ll = log --pretty=oneline --abbrev-commit --graph --decorate
+  # m = merge
+  # mt = mergetool
+  # mum = merge upstream/main
+  # mine = "!git byme"
+  # p = pull
+  # pum = pull upstream main
+  # prunerem = "!git branch -d -r origin/$1"
+  # prunepr = "!git for-each-ref refs/heads/pr-* --format='%(refname:short)' | while read ref ; do git branch -D $ref ; done"
+  # s = status
+  # ss = status -s
+  # sync = "!git fu && git com && git mum && git push" 
+  # tags = fetch upstream "refs/tags/*:refs/tags/*"

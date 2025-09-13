@@ -1,304 +1,87 @@
+# -*- sh -*-
+# vim: ft=sh
+#
 # File: ~/.profile
 # Author: ClosedWontFix
-# Last update: 8/10/2025
+#
 
-if [ "$(uname)" = "Linux" ] && [ "$(id -u)" != "0" ]; then
+# Locale & umask
+[ -z "${LANG:-}" ] && LANG=en_US.UTF-8
+export LANG
+umask 022
 
-  # Reload v4l2loopback module
-  reload_v42loopback() {
-    sudo modprobe -r v4l2loopback
-    sudo modprobe v4l2loopback
-  }
+# XDG base dirs (fallbacks)
+[ -n "$XDG_CONFIG_HOME" ] || XDG_CONFIG_HOME="$HOME/.config"
+[ -n "$XDG_CACHE_HOME"  ] || XDG_CACHE_HOME="$HOME/.cache"
+[ -n "$XDG_STATE_HOME"  ] || XDG_STATE_HOME="$HOME/.local/state"
+export XDG_CONFIG_HOME XDG_CACHE_HOME XDG_STATE_HOME
 
-  # Mouse jiggler
-  if [ "$(which xdotool)" ]; then
-    jiggler() {
-      while true; do
-        xdotool mousemove_relative -- 1 1
-        sleep 1
-        xdotool mousemove_relative -- -1 -1
-        sleep 60
-      done
-    }
-  fi
+# History (portable: ash supports HISTFILE/HISTSIZE; ignore features not universal)
+HISTDIR="$XDG_STATE_HOME/sh"
+[ -d "$HISTDIR" ] || mkdir -p "$HISTDIR"
+[ -n "$HISTFILE" ] || HISTFILE="$HISTDIR/history"
+[ -n "$HISTSIZE" ] || HISTSIZE=5000
+export HISTFILE HISTSIZE
 
-  # Magic 8-ball
-  8ball() {
-    echo
-    echo "Shaking ..."
-    echo
-    sleep 2
-    value="$( (awk 'BEGIN { srand(); print int(rand() % 3) }') )"
-    case $value in
-      0) echo "All signs point to yes." ;;
-      1) echo "The answer is no." ;;
-      2) echo "Ask again later." ;;
-      3) echo "Outlook hazy." ;;
-    esac
-    echo
-  }
+# Ensure a login umask
+umask 022
 
-fi
+# Reuse or start ssh-agent (skip when inside SSH)
+agent_env="$HOME/.ssh/agent.env"
 
-
-if [ -x /usr/bin/dircolors ]; then
-  if [ -r "${HOME}"/.dircolors ]; then
-    eval "$(dircolors -b "${HOME}"/.dircolors)"
+# Inside SSH? Don't spawn a local agent.
+if [ -z "$SSH_CONNECTION" ]; then
+  # If an agent is already exported and reachable, keep it.
+  if [ -S "$SSH_AUTH_SOCK" ] && ssh-add -l >/dev/null 2>&1; then
+    :
   else
-    eval "$(dircolors -b)"
-  fi
-
-elif [ "$(uname)" = "Darwin" ]; then
-  CLICOLOR=1
-  LSCOLORS='ExFxCxDxBxegedabagacad'
-  export CLICOLOR LSCOLORS
-
-fi
-
-
-if [ "$(id -u)" = "0" ]; then
-  alias ls='ls --color=auto'
-  alias la='ls -la --color=auto'
-  alias ll='ls -l --color=auto'
-
-else
-  # Print human-readable sizes
-  alias ls='ls -h --color=auto'
-  alias la='ls -lah --color=auto'
-  alias ll='ls -lh --color=auto'
-
-fi
-
-
-alias grep='grep --color=auto'
-alias egrep='egrep --color=auto'
-alias fgrep='fgrep --color=auto'
-
-alias cp='cp -iv'
-alias mv='mv -iv'
-alias rm='rm -iv'
-
-alias dt='date +%Y%m%d-%H%M%S'
-
-
-if [ "$(which dnf)" ]; then
-  alias dnf='sudo dnf'
-  alias yum='sudo dnf'
-
-elif [ "$(which yum)" ]; then
-  alias yum='sudo yum'
-
-fi
-
-
-# Alias vi (nvim > vim > vi)
-if [ "$(which nvim)" ]; then
-  alias vi='nvim'
-  EDITOR='nvim'
-  export EDITOR
-
-  if [ "$(id -u)" != "0" ]; then
-    [ -d "${HOME}"/.config/nvim ] || mkdir -p "${HOME}"/.config/nvim
-
-    if ! [ "$(grep 'require("config.lazy")' "${HOME}"/.config/nvim/init.lua)" ]; then
-      echo
-      echo "Neovim is installed, but not configured to use LazyVim."
-      echo
-      echo "Backing up previous Neovim configuration (if applicable)..."
-      [ -d "${HOME}"/.config/nvim ] && mv "${HOME}"/.config/nvim "${HOME}"/.config/nvim."$(date +%Y%m%d-%H%M%S)"
-      [ -d "${HOME}"/.local/share/nvim ] && mv "${HOME}"/.local/share/nvim "${HOME}"/local/share/nvim."$(date +%Y%m%d-%H%M%S)"
-      [ -d "${HOME}"/.local/state/nvim ] && mv "${HOME}"/.local/state/nvim "${HOME}"/.local/state/nvim."$(date +%Y%m%d-%H%M%S)"
-      [ -d "${HOME}"/.cache/nvim ] && mv "${HOME}"/.cache/nvim "${HOME}"/.cache/nvim."$(date +%Y%m%d-%H%M%S)"
-      echo
-      echo "Installing LazyVim..."
-      echo
-      git clone -q https://github.com/LazyVim/starter "${HOME}"/.config/nvim
-      rm -rf "${HOME}"/.config/nvim/.git
-      echo
-
+    # Try to reuse a previously saved agent
+    if [ -r "$agent_env" ]; then
+      # shellcheck source=/dev/null
+      . "$agent_env"
+      # Validate the sourced agent; if bad, unset and start fresh
+      if ! [ -S "$SSH_AUTH_SOCK" ] || ! ssh-add -l >/dev/null 2>&1; then
+        unset SSH_AUTH_SOCK SSH_AGENT_PID
+      fi
     fi
 
-  fi
-
-elif [ "$(which vim)" ]; then
-  alias vi='vim'
-  EDITOR='vim'
-  export EDITOR
-
-elif [ "$(which vi)" ]; then
-  EDITOR='vi'
-  export EDITOR
-
-fi
-
-
-if [ "$(which less)" ]; then
-
-  if ! [ "$(readlink /bin/sh)" = "busybox" ]; then
-    PAGER='less -R'
-    # Enable mouse scrolling in less
-    LESS='--mouse'
-    export PAGER LESS
-
-  fi
-
-  if [ "$(echo "$LANG" | grep  UTF-8)" ]; then 
-    LESSCHARSET='UTF-8'
-    export LESSCHARSET
-
-  fi
-
-fi
-
-
-if [ "$(which git)" ] && [ "$(id -u)" != "0" ]; then
-
-  if [ -z "${ZSH+x}" ]; then
-    # Define git aliases if $ZSH is not defined
-    # These aliases _might_ be borrowed from oh-my-zsh
-    alias g=git
-    alias ga='git add'
-    alias gaa='git add --all'
-    alias gb='git branch'
-    alias gba='git branch --all'
-    alias gbd='git branch --delete'
-    alias gbD='git branch --delete --force'
-    alias gbm='git branch --move'
-    alias gbnm='git branch --no-merged'
-    alias gbr='git branch --remote'
-    alias gco='git checkout'
-    alias gcB='git checkout -B'
-    alias gcb='git checkout -b'
-    alias gcmsg='git commit --message'
-    alias gc='git commit --verbose'
-    alias gca='git commit --verbose --all'
-    alias 'gca!'='git commit --verbose --all --amend'
-    alias 'gc!'='git commit --verbose --amend'
-    alias gcf='git config --list'
-    alias gd='git diff'
-    alias gdca='git diff --cached'
-    alias gdcw='git diff --cached --word-diff'
-    alias gds='git diff --staged'
-    alias gdw='git diff --word-diff'
-    alias gdup='git diff @{upstream}'
-    alias gdt='git diff-tree --no-commit-id --name-only -r'
-    alias gf='git fetch'
-    alias gfo='git fetch origin'
-    alias glgg='git log --graph'
-    alias glgga='git log --graph --decorate --all'
-    alias glod='git log --graph --pretty="%Cred%h%Creset -%C(auto)%d%Creset %s %Cgreen(%ad) %C(bold blue)<%an>%Creset"'
-    alias glods='git log --graph --pretty="%Cred%h%Creset -%C(auto)%d%Creset %s %Cgreen(%ad) %C(bold blue)<%an>%Creset" --date=short'
-    alias glo='git log --oneline --decorate'
-    alias glog='git log --oneline --decorate --graph'
-    alias gloga='git log --oneline --decorate --graph --all'
-    alias gfg='git ls-files | grep'
-    alias gl='git pull'
-    alias gpr='git pull --rebase'
-    alias gprv='git pull --rebase -v'
-    alias gp='git push'
-    alias gpd='git push --dry-run'
-    alias gpv='git push --verbose'
-    alias gpu='git push upstream'
-    alias gr='git remote'
-    alias grv='git remote --verbose'
-    alias gra='git remote add'
-    alias grrm='git remote remove'
-    alias grmv='git remote rename'
-    alias grset='git remote set-url'
-    alias grup='git remote update'
-    alias grh='git reset'
-    alias grhh='git reset --hard'
-    alias grm='git rm'
-    alias grmc='git rm --cached'
-
-  fi
-
-  alias dotfiles='git --git-dir="${HOME}"/.dotfiles/ --work-tree="${HOME}"'
-
-fi
-
-
-if [ "$(which htop)" ] && [ "$(id -u)" != "0" ]; then
-  alias top='htop'
-
-fi
-
-
-# Alias codium for VSCode compatibility
-if [ "$(which codium)" ]; then
-  alias code='codium'
-
-fi
-
-
-# Disable pager for systemd
-if [ -e /run/systemd/system ]; then
-  SYSTEMD_PAGER=''
-  export SYSTEMD_PAGER
-
-fi
-
-
-if [ -f /usr/bin/gpg ]; then
-  GPG_TTY="$(tty)"
-  export GPG_TTY
-fi
-
-
-# Activate Homebrew
-if [ -z "${HOMEBREW_PREFIX+x}" ]; then
-
-  if [ "$(uname)" = "Darwin" ]; then
-
-    if [ -f /opt/homebrew/bin/brew ]; then
-      eval "$(/opt/homebrew/bin/brew shellenv)"
-
-    elif [ -f /usr/local/bin/brew ]; then
-      eval "$(/usr/local/bin/brew shellenv)"
-
+    # If still no valid agent, start one and save its env
+    if [ -z "$SSH_AUTH_SOCK" ]; then
+      eval "$(ssh-agent -s)" >/dev/null
+      umask 077
+      mkdir -p "$HOME/.ssh"
+      {
+        printf 'SSH_AUTH_SOCK=%s; export SSH_AUTH_SOCK;\n' "$SSH_AUTH_SOCK"
+        printf 'SSH_AGENT_PID=%s; export SSH_AGENT_PID;\n' "$SSH_AGENT_PID"
+      } > "$agent_env"
     fi
-
-  elif [ "$(uname)" = "Linux" ] && [ -f /home/linuxbrew/.linuxbrew/bin/brew ]; then
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-
   fi
-
 fi
 
+# POSIX login env only (PATH, exports). Do NOT source .shrc here.
+# Make *interactive* POSIX sh load ~/.shrc automatically
+[ -z "${ENV:-}" ] && ENV="$HOME/.shrc"
+export ENV
 
-if [ -n "${HOMEBREW_PREFIX+x}" ]; then
+# De-duplicate PATH (pure POSIX)
+dedup_path() {
+  old_IFS=$IFS
+  IFS=:
+  set -f            # disable globbing
+  # shellcheck disable=SC2086  # intentional splitting of $PATH
+  set -- $PATH      # split PATH on ':'
+  set +f            # re-enable globbing
+  IFS=$old_IFS
 
-  if [ -d "${HOMEBREW_PREFIX}/opt/curl/bin" ]; then
-    PATH="${HOMEBREW_PREFIX}/opt/curl/bin:${PATH}"
-    export PATH
-
-  fi
-
-  if [ -d "${HOMEBREW_PREFIX}"/opt/findutils/libexec/gnubin ]; then
-    alias find='"${HOMEBREW_PREFIX}"/bin/gfind'
-    alias locate='"${HOMEBREW_PREFIX}"/bin/glocate'
-    alias updatedb='"${HOMEBREW_PREFIX}"/bin/gupdatedb'
-    alias xargs='"${HOMEBREW_PREFIX}"bin/gxargs'
-
-  fi
-
-  if [ -d "${HOMEBREW_PREFIX}"/opt/e2fsprogs ]; then
-    PATH="${HOMEBREW_PREFIX}/opt/e2fsprogs/bin:${HOMEBREW_PREFIX}/opt/e2fsprogs/sbin:${PATH}"
-    export PATH
-
-  fi
-
-fi
-
-
-# Include work specific aliases
-[ -f "${HOME}"/.aliases.work ] && . "${HOME}"/.aliases.work
-
-# User specific environment
-[ -d "${HOME}"/.local/bin ] || mkdir "${HOME}"/.local/bin
-[ -d "${HOME}"/bin ] || mkdir "${HOME}"/bin
-if ! [ "$(echo "${PATH}" | grep "${HOME}"/.local/bin:"${HOME}"/bin:)" ]; then
-  PATH="${HOME}/.local/bin:${HOME}/bin:${PATH}"
-  export PATH
-
-fi
+  new=""
+  for d in "$@"; do
+    [ -z "$d" ] && continue
+    case ":$new:" in
+      *":$d:"*) ;;  # already present
+      *) new="${new:+$new:}$d" ;;
+    esac
+  done
+  PATH=$new
+}
+dedup_path
+unset -f dedup_path
