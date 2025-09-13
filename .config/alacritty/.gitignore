@@ -1,0 +1,7 @@
+# Pointers that vary per machine — never commit them
+os.toml
+host.toml
+host.d/active.toml
+theme.toml
+theme.d/active.toml
+alacritty-theme/

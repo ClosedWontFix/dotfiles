@@ -1,0 +1,24 @@
+# macos.toml
+# -----------------------------------------------------------------------------
+# macOS-specific overrides.
+# -----------------------------------------------------------------------------
+
+[window]
+option_as_alt = "OnlyLeft"
+# option_as_alt = "None"
+
+# [terminal]
+# Use login shell so tmux inherits macOS login environment
+# shell = { program = "/bin/zsh", args = ["-l", "-c", "tmux"] }
+
+[keyboard]
+bindings = [
+  { mods = "Command", key = "c", action = "None" },
+  { mods = "Command", key = "v", action = "None" },
+  { mods = "Command", key = "n", action = "None" },
+  { mods = "Command", key = "t", action = "None" },
+  { mods = "Control|Shift", key = "t", chars = "\u001b[116;6u" },
+  #{ mods = "Control|Shift", key = "t", chars = "\u0001b[97;6u" },
+  { mods = "Command|Shift", key = "m", action = "ToggleMaximized" }
+
+]

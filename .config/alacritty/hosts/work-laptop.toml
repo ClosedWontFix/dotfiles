@@ -1,0 +1,6 @@
+# hosts/work-laptop.toml
+[font]
+size = 13.0
+[window]
+decorations = "Buttonless"
+dimensions = { columns = 160, lines = 45 }

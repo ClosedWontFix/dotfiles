@@ -1,0 +1,15 @@
+# windows.toml
+# -----------------------------------------------------------------------------
+# Windows-specific overrides.
+# Choose either WSL → zsh → tmux (recommended) or native PowerShell → tmux.
+# -----------------------------------------------------------------------------
+
+# --- Option A: WSL → zsh → tmux (recommended) ---
+[terminal]
+program = "wsl.exe"
+args = ["-e", "zsh", "-ic", "tmux"]
+
+# --- Option B: Native PowerShell → tmux (uncomment to use) ---
+# [terminal]
+# program = "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+# args = ["-NoLogo", "-NoExit", "-Command", "tmux"]

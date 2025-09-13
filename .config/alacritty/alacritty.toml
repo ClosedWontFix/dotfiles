@@ -1,9 +1,8 @@
-# alacritty.toml
-# -----------------------------------------------------------------------------
-# Entry point for Alacritty.
-# - Uses *single-file* imports for host + theme pointers (active.toml).
-# - Pointers are created/updated by bootstrap scripts and are NOT tracked in git.
-# -----------------------------------------------------------------------------
+# -*- conf-toml -*-
+# # vim: ft=toml
+#
+# File: ~/.config/alacrittyalacritty.toml
+#
 
 [general]
 import = [
@@ -11,8 +10,6 @@ import = [
   "~/.config/alacritty/os.toml",
   "~/.config/alacritty/host.toml",
   "~/.config/alacritty/theme.toml"
-  # "~/.config/alacritty/host.d/active.toml",
-  # "~/.config/alacritty/theme.d/active.toml"
 ]
 
 live_config_reload = true

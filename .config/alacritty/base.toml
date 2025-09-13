@@ -1,0 +1,56 @@
+# base.toml
+# -----------------------------------------------------------------------------
+# Shared defaults across macOS, Linux, and Windows.
+# Theme selection is handled via theme.d/active.toml (pointer), not here.
+# -----------------------------------------------------------------------------
+
+#[env]
+#TERM = "xterm-256color"
+
+[terminal]
+# Start zsh and then tmux; macOS login shell flag (-l) is set in macos.toml
+# shell = { program = "/bin/zsh", args = ["-c", "tmux"] }
+
+[window]
+dimensions = { columns = 120, lines = 37 }
+resize_increments = true
+startup_mode = "Windowed"
+padding = { x = 0, y = 0 }
+decorations = "Full"
+decorations_theme_variant = "Dark"
+dynamic_title = true
+opacity = 0.9
+blur = true
+
+[cursor]
+style = { blinking = "On" }
+blink_timeout = 10
+
+[font]
+normal = { family = "MesloLGS Nerd Font", style = "Regular" }
+size = 14.0
+
+[colors]
+draw_bold_text_with_bright_colors = true
+
+[selection]
+save_to_clipboard = true
+# Characters that *break* a semantic word (double-click uses this).
+# If you ADD a character here, double-click will STOP including it.
+# If you REMOVE a character here, double-click will START including it.
+# Default from Alacritty docs:
+#semantic_escape_chars = ",│`|:\"' ()[]{}<>\t"
+
+[mouse]
+hide_when_typing = true
+
+[keyboard]
+bindings = [
+  { mods = "Control", key = "0", action = "ResetFontSize" },
+  { mods = "Control", key = "-", action = "DecreaseFontSize" },
+  { mods = "Control", key = "=", action = "IncreaseFontSize" },
+  { mods = "Control|Shift", key = "n", action = "CreateNewWindow" },
+  { mods = "Control|Shift", key = "c", action = "Copy" },
+  { mods = "Control|Shift", key = "v", action = "Paste" },
+  { mods = "Control|Shift", key = "m", action = "ToggleMaximized" }
+]
