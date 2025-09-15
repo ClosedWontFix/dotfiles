@@ -2,7 +2,7 @@
 # vim: ft=sh
 #
 # File: ~/.shrc
-# Author: ClosedWontFix
+# Author: Dan Borkowski
 #
 
 # Use 'type' for command detection: POSIX-standard and BusyBox-friendly (avoid 'which' / 'command -v').

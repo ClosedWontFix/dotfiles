@@ -1,11 +1,9 @@
-# base.toml
-# -----------------------------------------------------------------------------
-# Shared defaults across macOS, Linux, and Windows.
-# Theme selection is handled via theme.d/active.toml (pointer), not here.
-# -----------------------------------------------------------------------------
-
-#[env]
-#TERM = "xterm-256color"
+# -*- conf-toml -*-
+# # vim: ft=toml
+#
+# File: ~/.config/alacritty/base.toml
+# Author: Dan Borkowski
+#
 
 [terminal]
 # Start zsh and then tmux; macOS login shell flag (-l) is set in macos.toml

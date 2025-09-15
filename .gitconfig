@@ -1,5 +1,5 @@
 # File: ~/.gitconfig
-# Author: ClosedWontFix
+# Author: Dan Borkowski
 
 [core]
   editor = "if [[ -x /usr/bin/nvim ]] || [[ -x /usr/local/bin/nvim ]] || [[ -x /opt/homebrew/bin/nvim ]]; then EDITOR='nvim'; elif [[ -x /usr/bin/vim ]]; then EDITOR='vim'; else EDITOR='vi'; fi; $EDITOR"

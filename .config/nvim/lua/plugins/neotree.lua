@@ -1,5 +1,9 @@
 -- -*- lua -*-
 -- vim: ft=lua
+--
+-- File: ~/.config/nvim/lua/plugins/neotree.lua
+-- Author: Dan Borkowski
+--
 
 return {
   "nvim-neo-tree/neo-tree.nvim",

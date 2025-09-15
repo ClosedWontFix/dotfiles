@@ -2,7 +2,7 @@
 # vim: ft=bash
 #
 # File: ~/.bashrc
-# Author: ClosedWontFix
+# Author: Dan Borkowski
 #
 
 # Load only in interactive shells

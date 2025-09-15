@@ -1,5 +1,9 @@
 -- -*- lua -*-
 -- vim: ft=lua
+--
+-- File: ~/.config/nvim/lua/config/lazy-lockfile.lua
+-- Author: Dan Borkowski
+--
 
 --[[
   Configure LazyVim to use a per-host lockfile instead of the default lazy-lock.json.

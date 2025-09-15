@@ -1,5 +1,9 @@
 -- -*- lua -*-
 -- vim: ft=lua
+--
+-- File: ~/.config/nvim/lua/plugins/live-preview.lua
+-- Author: Dan Borkowski
+--
 
 return {
   {

@@ -2,7 +2,7 @@
 # vim: ft=zsh
 #
 # File: ~/.zprofle
-# Author: ClosedWontFix
+# Author: Dan Borkowski
 #
 
 # Only run in interactive login shells

@@ -1,7 +1,8 @@
 # -*- conf-toml -*-
 # # vim: ft=toml
 #
-# File: ~/.config/alacrittyalacritty.toml
+# File: ~/.config/alacritty/alacritty.toml
+# Author: Dan Borkowski
 #
 
 [general]

@@ -1,5 +1,9 @@
-# File ~/.config/git/ignore
-# Author: ClosedWontFix
+# -*- gitignore -*-
+# vim: ft=gitignore
+#
+# File: ~/.config/git/ignore
+# Author: Dan Borkowski
+#
 
 # Ignore Mac system files
 .DS_store

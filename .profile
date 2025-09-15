@@ -2,7 +2,7 @@
 # vim: ft=sh
 #
 # File: ~/.profile
-# Author: ClosedWontFix
+# Author: Dan Borkowski
 #
 
 # Locale & umask

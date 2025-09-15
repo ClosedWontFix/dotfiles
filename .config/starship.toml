@@ -1,6 +1,8 @@
+# -*- conf-toml -*-
+# vim: ft=toml
 #
 # File: ~/.config/starship.toml
-# Author: ClosedWontFix
+# Author: Dan Borkowski
 #
 
 # Get editor completions based on the config schema

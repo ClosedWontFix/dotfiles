@@ -2,7 +2,7 @@
 # vim: ft=zsh
 #
 # File: ~/.zshrc
-# Author: ClosedWontFix
+# Author: Dan Borkowski
 #
 
 # Load only in interactive shells (skip for non-interactive)
@@ -14,80 +14,65 @@
 # Source shared shell configuration
 [[ -r "$HOME/.shrc" ]] && source "$HOME/.shrc"
 
-# Ensure we're in zsh semantics
-emulate -L zsh
+##### Completion & ZLE #########################################################
 
-setopt APPEND_HISTORY
-setopt EXTENDED_HISTORY
-setopt HIST_EXPIRE_DUPS_FIRST
-setopt HIST_FIND_NO_DUPS
-setopt HIST_IGNORE_ALL_DUPS
-setopt HIST_IGNORE_DUPS
-setopt HIST_REDUCE_BLANKS
-setopt HIST_VERIFY
-setopt INTERACTIVE_COMMENTS
-setopt SHARE_HISTORY
-export HISTFILE="${HISTFILE:-$HOME/.zsh_history}"
-export HISTSIZE="${HISTSIZE:-50000}"
-export SAVEHIST="${SAVEHIST:-20000}"
+# Enable completion (cached in XDG cache)
+: "${XDG_CACHE_HOME:=$HOME/.cache}"
+mkdir -p "${XDG_CACHE_HOME}/zsh" 2>/dev/null || true
+autoload -Uz compinit
+compinit -d "${XDG_CACHE_HOME}/zsh/.zcompdump-${ZSH_VERSION}"
 
-# Output full history
-alias history='history 0'
+# Smarter, case-insensitive matching (case-insensitive; then dash/underscore/period flex; then substring)
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
 
-#setopt interactivecomments
+# Show nice descriptions and group results
+zstyle ':completion:*' verbose yes
+zstyle ':completion:*:descriptions' format '%F{yellow}– %d –%f'
+zstyle ':completion:*' group-name ''
 
-# Enabled autocomplete
-autoload -Uz +X compinit && compinit
+# Complete menu selection with arrow keys
+zmodload -i zsh/complist
+zstyle ':completion:*' menu select
+bindkey -M menuselect '^M' accept-line
+bindkey -M menuselect '^G' send-break
+bindkey -M menuselect '^N' down-line-or-history
+bindkey -M menuselect '^P' up-line-or-history
+bindkey -M menuselect '^F' forward-char
+bindkey -M menuselect '^B' backward-char
 
-# Make completion case-insensitive
-zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+# Don’t beep on failed completion
+setopt NO_BEEP
 
-# Enable vi-mode
+# Enable vi mode (and make sure keys apply in both insert/command maps)
 bindkey -v
+bindkey -M viins '^A' beginning-of-line
+bindkey -M viins '^E' end-of-line
+bindkey -M vicmd '^A' beginning-of-line
+bindkey -M vicmd '^E' end-of-line
 
-# unbind ^t on macos; it does some kind of SIGINFO dump?
-[[ "$MACOS" == 1 ]] && bindkey -r '^t'
-
-# allow vv to edit the command line
-#autoload -Uz edit-command-line
-#zle -N edit-command-line
-#bindkey -M vicmd 'vv' edit-command-line
-
-# allow ctrl-p, ctrl-n for navigate history
-#bindkey '^P' up-history
-#bindkey '^N' down-history
-
-# allow ctrl-h, ctrl-w, ctrl-? for char and word deletion
-#bindkey '^?' backward-delete-char
-#bindkey '^h' backward-delete-char
-#bindkey '^w' backward-kill-word
-
-# allow ctrl-r and ctrl-s to search the history
+# History search (Ctrl-R/Ctrl-S). Ensure Ctrl-S works by disabling XOFF.
 bindkey '^r' history-incremental-search-backward
 bindkey '^s' history-incremental-search-forward
+stty -ixon 2>/dev/null
 
-# allow ctrl-a and ctrl-e to move to beginning/end of line
-bindkey '^a' beginning-of-line
-bindkey '^e' end-of-line
+# Unbind Ctrl-T on macOS (it triggers SIGINFO there)
+#[[ "$MACOS" = 1 ]] && bindkey -r '^t'
 
 # Right prompt spacing fix
 typeset -g ZLE_RPROMPT_INDENT=0
 
-# Completion cache
-: "${XDG_CACHE_HOME:=$HOME/.cache}"
-autoload -Uz compinit
-mkdir -p "${XDG_CACHE_HOME}/zsh" 2>/dev/null || true
-compinit -d "${XDG_CACHE_HOME}/zsh/.zcompdump"
+# Output full history
+alias history='history 0'
 
 # Optional fzf
-if command -v fzf >/dev/null 2>&1; then
-  [[ -f /usr/share/doc/fzf/examples/completion.zsh ]] && source /usr/share/doc/fzf/examples/completion.zsh
-  [[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]] && source /usr/share/doc/fzf/examples/key-bindings.zsh
-  if command -v brew >/dev/null 2>&1; then
-    [[ -f "$(brew --prefix)/opt/fzf/shell/completion.zsh" ]] && source "$(brew --prefix)/opt/fzf/shell/completion.zsh"
-    [[ -f "$(brew --prefix)/opt/fzf/shell/key-bindings.zsh" ]] && source "$(brew --prefix)/opt/fzf/shell/key-bindings.zsh"
-  fi
-fi
+# if command -v fzf >/dev/null 2>&1; then
+#   [[ -f /usr/share/doc/fzf/examples/completion.zsh ]] && source /usr/share/doc/fzf/examples/completion.zsh
+#   [[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]] && source /usr/share/doc/fzf/examples/key-bindings.zsh
+#   if command -v brew >/dev/null 2>&1; then
+#     [[ -f "$(brew --prefix)/opt/fzf/shell/completion.zsh" ]] && source "$(brew --prefix)/opt/fzf/shell/completion.zsh"
+#     [[ -f "$(brew --prefix)/opt/fzf/shell/key-bindings.zsh" ]] && source "$(brew --prefix)/opt/fzf/shell/key-bindings.zsh"
+#   fi
+# fi
 
 # Prompt block (Starship first; fallback to git-prompt + kube-ps1)
 setopt PROMPT_SUBST
@@ -146,4 +131,41 @@ fi
 
 # shellcheck source=/dev/null
 [[ -n "$HOST_SHORT" && -r "$HOME/.zshrc.$HOST_SHORT" ]] && source "$HOME/.zshrc.$HOST_SHORT"
+
+# --- History configuration ---
+
+# Where and how much to save
+HISTFILE=${HISTFILE:-$HOME/.zsh_history}
+typeset -gi HISTSIZE=100000
+typeset -gi SAVEHIST=100000
+
+# Write + share history immediately
+setopt APPEND_HISTORY
+setopt INC_APPEND_HISTORY
+setopt INC_APPEND_HISTORY_TIME
+setopt SHARE_HISTORY
+
+# Include timestamps + duration in history file
+setopt EXTENDED_HISTORY
+
+# De-dupe & cleanup behavior
+setopt HIST_EXPIRE_DUPS_FIRST
+setopt HIST_IGNORE_DUPS        # (optional) only skip if previous line was identical
+# setopt HIST_IGNORE_ALL_DUPS    # (optional) skip all duplicates entirely
+setopt HIST_FIND_NO_DUPS
+setopt HIST_REDUCE_BLANKS
+setopt HIST_VERIFY
+
+# Misc
+setopt INTERACTIVE_COMMENTS
+setopt HIST_FCNTL_LOCK
+# setopt HIST_SAVE_BY_COPY       # enable if your FS prefers copy+rename semantics
+
+# Sync history on every prompt (ensures new shells always see latest)
+autoload -Uz add-zsh-hook
+precmd_history_sync() {
+  fc -An   # append this session’s new lines
+  fc -Rn   # read in new lines from other shells
+}
+add-zsh-hook precmd precmd_history_sync
 

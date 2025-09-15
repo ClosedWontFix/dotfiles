@@ -1,5 +1,9 @@
 -- -*- lua -*-
 -- vim: ft=lua
+--
+-- File: ~/.config/nvim/lua/plugins/vim-kitty.lua
+-- Author: Dan Borkowski
+--
 
 return {
   {

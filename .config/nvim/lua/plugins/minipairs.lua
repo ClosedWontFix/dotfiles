@@ -1,5 +1,9 @@
 -- -*- lua -*-
 -- vim: ft=lua
+--
+-- File: ~/.config/nvim/lua/plugins/minipairs.lua
+-- Author: Dan Borkowski
+--
 
 return {
   {

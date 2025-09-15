@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # -*- bash -*-
 # vim: ft=bash
+#
+# File: .config/tmux/scripts/window_name.sh
+# Author: Dan Borkowski
+#
 
 cmd="$1"    # pane_current_command
 pid="$2"    # pane PID

@@ -1,3 +1,10 @@
+-- -*- lua -*-
+-- vim: ft=lua
+--
+-- File: ~/.config/nvim/lua/config/autocmds.lua
+-- Author: Dan Borkowski
+--
+
 -- Autocmds are automatically loaded on the VeryLazy event
 -- Default autocmds that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/autocmds.lua
 --

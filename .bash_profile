@@ -2,7 +2,7 @@
 # vim: ft=bash
 #
 # File: ~/.bash_profile
-# Author: ClosedWontFix
+# Author: Dan Borkowski
 #
 
 # Only run in interactive login shells
