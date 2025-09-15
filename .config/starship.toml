@@ -36,18 +36,16 @@ ${custom.git_config_email}\
 ${custom.dotfiles_head}${custom.dotfiles_changes}${custom.dotfiles_commits_ahead}${custom.dotfiles_commits_behind}${custom.dotfiles_tail}\
 $character"""
 
-# right_format = """$status${custom.kubeadmin_divider}${custom.kube_print_cached}$battery$time"""
-right_format = """$status${custom.kubeadmin_divider}${custom.kube_print_cached}"""
-
+right_format = """$status${custom.kubeadmin_divider}${custom.kube_print_cached}$battery$time"""
 
 [battery]
 format = '[ $symbol$percentage]($style)'
-disabled = true
+disabled = false
 [[battery.display]]
-threshold = 10
+threshold = 15
 style = 'fg:bright-red bold'
 [[battery.display]]
-threshold = 30
+threshold = 50
 style = 'fg:#F78000 bold'
 
 [character]
@@ -277,15 +275,16 @@ symbol = '󱁢 '
 disabled = true
 
 [time]
-disabled = true
-format = ' [ $time ]($style) '
+time_format = "%H:%M"
+disabled = false
+format = ' [$time]($style) '
+style = "fg:bright-yellow bold"
 
 [username]
 format = "[$user]($style)"
 show_always = true
 style_user = "fg:bright-green bold bg:black"
 style_root = "fg:bright-red bold inverted"
-
 
 [custom.docker]
 format = '[$symbol]($style) '

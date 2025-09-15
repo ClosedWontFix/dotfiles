@@ -374,25 +374,27 @@ fi
 
 # Prefer eza when available (alias ls -> eza)
 if type eza >/dev/null 2>&1; then
-  alias ls='eza --color=auto'
   alias l='eza -F --color=auto'
+  alias l.='eza -d .* --color=auto'
   alias la='eza -A --color=auto'
+  alias latr='eza -lA -snew --color=auto'
   alias ll='eza -l --color=auto'
+  alias ll.='eza -ld .* --color=auto'
   alias lla='eza -lA --color=auto'
+  alias ls='eza --color=auto'
   alias ltr='eza -l -snew --color=auto'
   alias ltra='eza -lA -snew --color=auto'
-  alias l.='eza -d .* --color=auto'
-  alias ll.='eza -ld .* --color=auto'
 else
-  alias ls='ls -h --color=auto'
   alias l='ls -CF --color=auto'
+  alias l.='ls -d .* --color=auto'
   alias la='ls -Ah --color=auto'
+  alias latr='ls -lAhtr --color=auto'
   alias ll='ls -lh --color=auto'
+  alias ll.='ls -ld .* --color=auto'
   alias lla='ls -lAh --color=auto'
+  alias ls='ls -h --color=auto'
   alias ltr='ls -lhtr --color=auto'
   alias ltra='ls -lAhtr --color=auto'
-  alias l.='ls -d .* --color=auto'
-  alias ll.='ls -ld .* --color=auto'
 fi
 
 # git aliases if command exists
@@ -403,8 +405,8 @@ if type git >/dev/null 2>&1; then
   fi
 
   alias g=git
-  alias ga='git add'
   alias gA='git add -A'
+  alias ga='git add'
   alias gco='git commit'
   alias gl='git log --oneline'
   alias gpl='git pull'

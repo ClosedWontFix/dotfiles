@@ -161,11 +161,3 @@ setopt INTERACTIVE_COMMENTS
 setopt HIST_FCNTL_LOCK
 # setopt HIST_SAVE_BY_COPY       # enable if your FS prefers copy+rename semantics
 
-# Sync history on every prompt (ensures new shells always see latest)
-autoload -Uz add-zsh-hook
-precmd_history_sync() {
-  fc -An   # append this session’s new lines
-  fc -Rn   # read in new lines from other shells
-}
-add-zsh-hook precmd precmd_history_sync
-
